@@ -11,6 +11,18 @@ export const SIDE_MARGIN_OVER_PAGE_H = 0.0477; // 基准开本左右各 53.4u
 const CELL_ASPECT = 1.2; // 目标格宽:格高（10×18 基准实测）
 const SPREAD_THRESHOLD = 0.9; // 宽高比 ≥ 此值 → 对开双半叶
 
+// 版框几何——svg 层与布局计划共用同一公式（改边距只改这里）
+export function frameDims(pageW: number, pageH: number) {
+  const frameH = FRAME_H_OVER_PAGE * pageH;
+  const frameW = pageW - 2 * SIDE_MARGIN_OVER_PAGE_H * pageH;
+  const fy0 = ((pageH - frameH) * TOP_OVER_BOTTOM) / (1 + TOP_OVER_BOTTOM);
+  const fx0 = SIDE_MARGIN_OVER_PAGE_H * pageH;
+  return { frameW, frameH, fx0, fy0 };
+}
+
+// 整叶（对开预览）画布宽 = 两个基准半叶
+export const SPREAD_PAGE_W = 2 * Math.round(BASE_PAGE_H * BASE_RATIO);
+
 export interface LayoutPlan {
   mode: 'single' | 'spread';
   pageW: number;
@@ -24,8 +36,7 @@ export function computeLayoutPlan(
 ): LayoutPlan {
   const pageH = BASE_PAGE_H;
   const pageW = pageH * ratio;
-  const frameH = FRAME_H_OVER_PAGE * pageH;
-  const frameW = pageW - 2 * SIDE_MARGIN_OVER_PAGE_H * pageH;
+  const { frameW, frameH } = frameDims(pageW, pageH);
   const cellH = frameH / userGrid.charsPerCol;
   const targetColW = cellH * CELL_ASPECT;
   const mode = ratio >= SPREAD_THRESHOLD ? 'spread' : 'single';

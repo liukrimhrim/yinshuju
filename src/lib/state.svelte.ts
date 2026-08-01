@@ -1,6 +1,7 @@
 import { parse } from './engine/parse';
 import { layout } from './engine/layout';
 import { renderPage, renderSpread } from './engine/svg';
+import { BASE_PAGE_H, SPREAD_PAGE_W } from './engine/geometry';
 import {
   THEMES,
   DEFAULT_THEME_ID,
@@ -54,7 +55,7 @@ class AppState {
       this.pages[this.curIdx]!,
       this.pages[this.curIdx + 1] ?? null,
       this.meta,
-      { ...this.renderOpts, pageW: 1280, pageH: 1120 },
+      { ...this.renderOpts, pageW: SPREAD_PAGE_W, pageH: BASE_PAGE_H },
     ),
   );
 

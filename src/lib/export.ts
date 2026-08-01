@@ -78,6 +78,19 @@ async function fontCSSFor(fontId: FontId, usedText: string): Promise<string> {
   return faces.join('');
 }
 
+// 文档用字全集：正文+元数据+版心页码可能用到的汉字数码（叶数上限 99 → 十/百收齐）
+const CN_NUM_CHARS = '一二三四五六七八九十百';
+export function usedTextOf(ctx: ExportContext): string {
+  return (
+    ctx.text +
+    ctx.meta.title +
+    ctx.meta.author +
+    ctx.meta.banxinTitle +
+    ctx.meta.banxinJuan +
+    CN_NUM_CHARS
+  );
+}
+
 // —— 组合：状态 → 指定比例下的（页集, svg 生成器） ——
 
 export interface ExportContext {
@@ -129,34 +142,42 @@ function withFontCSS(svg: string, css: string): string {
   return css ? svg.replace('>', `><style>${css}</style>`) : svg;
 }
 
+export interface ImageOptions {
+  format: 'png' | 'jpeg';
+  quality: number;
+  scale: number;
+}
+
 export interface ImageResult {
   blob: Blob;
   w: number;
   h: number;
+  fontEmbedded: boolean; // false = 切片缺失，导出退化为查看端字体
 }
 
 export async function exportImage(
   ctx: ExportContext,
   ratio: number,
   frameIdx: number,
-  format: 'png' | 'jpeg',
-  quality: number,
-  scale: number,
+  opts: ImageOptions,
 ): Promise<ImageResult> {
   const { plan, svgAt } = planFor(ctx, ratio);
-  const svg = withFontCSS(
-    svgAt(frameIdx),
-    await fontCSSFor(ctx.fontId, svgAt(frameIdx)),
-  );
-  const cv = await svgToCanvas(svg, plan.pageW, plan.pageH, scale);
+  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx));
+  const svg = withFontCSS(svgAt(frameIdx), css);
+  const cv = await svgToCanvas(svg, plan.pageW, plan.pageH, opts.scale);
   const blob = await new Promise<Blob>((res, rej) =>
     cv.toBlob(
       (b) => (b ? res(b) : rej(new Error('toBlob failed'))),
-      `image/${format}`,
-      quality,
+      `image/${opts.format}`,
+      opts.quality,
     ),
   );
-  return { blob, w: cv.width, h: cv.height };
+  return {
+    blob,
+    w: cv.width,
+    h: cv.height,
+    fontEmbedded: ctx.fontId === 'serif' || css !== '',
+  };
 }
 
 // —— PDF：固定 16×28cm 开本多页 + 篇题书签（pdf-lib 低层 outline） ——
@@ -164,23 +185,20 @@ export async function exportImage(
 const PDF_W_PT = 453.543; // 16cm
 const PDF_H_PT = 793.701; // 28cm
 
+export interface PdfResult {
+  blob: Blob;
+  fontEmbedded: boolean;
+}
+
 export async function exportPdf(
   ctx: ExportContext,
   scale: number,
   onProgress?: (done: number, total: number) => void,
-): Promise<Blob> {
+): Promise<PdfResult> {
   const { PDFDocument, PDFName, PDFHexString, PDFNumber, PDFArray } =
     await import('pdf-lib');
   const { pages, svgAt, plan } = planFor(ctx, BASE_RATIO);
-  const css = await fontCSSFor(
-    ctx.fontId,
-    ctx.text +
-      ctx.meta.title +
-      ctx.meta.author +
-      ctx.meta.banxinTitle +
-      ctx.meta.banxinJuan +
-      '一二三四五六七八九十',
-  );
+  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx));
   const doc = await PDFDocument.create();
   doc.setTitle(ctx.meta.title);
 
@@ -242,5 +260,8 @@ export async function exportPdf(
 
   // 不用 object streams：outline/catalog 保持明文对象，老阅读器兼容性更好
   const bytes = await doc.save({ useObjectStreams: false });
-  return new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' });
+  return {
+    blob: new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }),
+    fontEmbedded: ctx.fontId === 'serif' || css !== '',
+  };
 }

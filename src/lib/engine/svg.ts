@@ -1,12 +1,6 @@
 import type { Meta, Page, PlacedChar } from './types';
 import type { Palette } from './themes';
-import {
-  BASE_PAGE_H,
-  BASE_RATIO,
-  FRAME_H_OVER_PAGE,
-  TOP_OVER_BOTTOM,
-  SIDE_MARGIN_OVER_PAGE_H,
-} from './geometry';
+import { BASE_PAGE_H, BASE_RATIO, frameDims } from './geometry';
 import type { GridParams } from './types';
 
 export interface RenderOptions {
@@ -58,10 +52,7 @@ interface Geo {
 function makeGeo(o: RenderOptions, slots: number): Geo {
   const pageH = o.pageH ?? BASE_PAGE_H;
   const pageW = o.pageW ?? Math.round(BASE_PAGE_H * BASE_RATIO);
-  const frameH = FRAME_H_OVER_PAGE * pageH;
-  const fy0 = ((pageH - frameH) * TOP_OVER_BOTTOM) / (1 + TOP_OVER_BOTTOM);
-  const fx0 = SIDE_MARGIN_OVER_PAGE_H * pageH;
-  const frameW = pageW - 2 * fx0;
+  const { frameW, frameH, fx0, fy0 } = frameDims(pageW, pageH);
   const colW = frameW / slots;
   const cellH = frameH / o.grid.charsPerCol;
   const fs = Math.min(colW * 0.8, cellH * 0.91);

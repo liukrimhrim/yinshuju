@@ -27,42 +27,46 @@
     links = [...links.slice(-3), { name, url: URL.createObjectURL(blob) }];
   }
 
-  async function doImage() {
+  const embedWarn = (ok: boolean) => (ok ? '' : ' ⚠ 字体切片缺失，未内嵌');
+
+  async function run(task: () => Promise<void>) {
     busy = true;
-    status = '渲染中…';
     try {
-      const t0 = performance.now();
-      const { blob, w, h } = await exportImage(
-        app.exportCtx,
-        ratio,
-        planned.frames[safeFrame]!,
-        format,
-        quality,
-        scale,
-      );
-      const name = `${app.meta.banxinTitle || '印书局'}-${ratioId}.${format === 'png' ? 'png' : 'jpg'}`;
-      addLink(name, blob);
-      status = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms`;
+      await task();
     } catch (e) {
       status = 'ERROR: ' + (e as Error).message;
     }
     busy = false;
   }
 
-  async function doPdf() {
-    busy = true;
-    try {
+  const doImage = () =>
+    run(async () => {
+      status = '渲染中…';
       const t0 = performance.now();
-      const blob = await exportPdf(app.exportCtx, scale, (done, total) => {
-        status = `PDF ${done}/${total} 叶…`;
-      });
+      const { blob, w, h, fontEmbedded } = await exportImage(
+        app.exportCtx,
+        ratio,
+        planned.frames[safeFrame]!,
+        { format, quality, scale },
+      );
+      const name = `${app.meta.banxinTitle || '印书局'}-${ratioId}.${format === 'png' ? 'png' : 'jpg'}`;
+      addLink(name, blob);
+      status = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}`;
+    });
+
+  const doPdf = () =>
+    run(async () => {
+      const t0 = performance.now();
+      const { blob, fontEmbedded } = await exportPdf(
+        app.exportCtx,
+        scale,
+        (done, total) => {
+          status = `PDF ${done}/${total} 叶…`;
+        },
+      );
       addLink(`${app.meta.banxinTitle || '印书局'}.pdf`, blob);
-      status = `PDF ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms`;
-    } catch (e) {
-      status = 'ERROR: ' + (e as Error).message;
-    }
-    busy = false;
-  }
+      status = `PDF ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}`;
+    });
 </script>
 
 <div class="panel">
