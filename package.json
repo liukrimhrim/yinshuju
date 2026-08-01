@@ -26,6 +26,7 @@
     "vitest": "^3.0.0"
   },
   "dependencies": {
+    "opencc-js": "^1.4.1",
     "opentype.js": "^2.0.0",
     "pdf-lib": "^1.17.1"
   }

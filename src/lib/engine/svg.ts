@@ -14,6 +14,7 @@ export interface RenderOptions {
   pageW?: number; // 默认 16:28 基准开本
   pageH?: number;
   overlays?: string; // 叠加层（印章等），已定位的 SVG 片段
+  banxinChapter?: string; // 可选：当前篇题入版心（vRain 章回机制）
 }
 
 const FISHTAIL_POS = 0.25;
@@ -149,6 +150,7 @@ function banxinAt(
   meta: Meta,
   folio: number,
   P: Palette,
+  chapter?: string,
 ): string {
   const ftDepth = g.colW * 0.6; // 鱼尾总深
   const ftNotch = g.colW * 0.42; // 尾尖凹口深
@@ -162,6 +164,14 @@ function banxinAt(
     g.bxFs,
     P.text,
   );
+  if (chapter)
+    out += vertText(
+      chapter,
+      cx,
+      yF + ftDepth + 14 + 6.4 * (g.bxFs + 5),
+      g.bxFs,
+      P.text,
+    );
   out += vertText(toCnNum(folio), cx, g.fy0 + g.frameH * 0.78, g.bxFs, P.text);
   return out;
 }
@@ -261,7 +271,7 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
     const x = g.fx0 + g.frameW - k * g.colW;
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
-  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P)}</g>`;
+  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, o.banxinChapter)}</g>`;
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colX = (i: number) => g.fx0 + g.frameW - (i + 1) * g.colW;
@@ -293,7 +303,7 @@ export function renderSpread(
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
   const bxCenter = g.fx0 + (cols + 0.5) * g.colW;
-  frame += banxinAt(bxCenter, g, meta, pageR.folio, P);
+  frame += banxinAt(bxCenter, g, meta, pageR.folio, P, o.banxinChapter);
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colXR = (i: number) => g.fx0 + g.frameW - (i + 1) * g.colW;

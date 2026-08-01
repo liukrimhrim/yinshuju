@@ -1,8 +1,14 @@
 <script lang="ts">
   import { app } from '../state.svelte';
+  import Reader from './Reader.svelte';
 
   let spread = $state(false);
+  let reading = $state(false);
 </script>
+
+{#if reading}
+  <Reader onclose={() => (reading = false)} />
+{/if}
 
 <div class="preview">
   <div class="page" class:spread>
@@ -29,6 +35,7 @@
       </button>
     {/if}
     <button class:on={spread} onclick={() => (spread = !spread)}>对开</button>
+    <button onclick={() => (reading = true)}>阅读</button>
   </div>
 </div>
 

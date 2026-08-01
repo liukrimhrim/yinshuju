@@ -13,6 +13,7 @@ import {
 import type { Meta } from './engine/types';
 import { DEMO_META, DEMO_TEXT } from './demo';
 import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
+import { loadS2T, highRiskChars } from './convert';
 import { pageGeo } from './engine/svg';
 import type { Font } from 'opentype.js';
 
@@ -28,10 +29,19 @@ class AppState {
   fontId = $state<FontId>(THEMES[0]!.defaultFont);
   textureStrength = $state(0.6);
   showPunct = $state(true);
+  banxinChapter = $state(false); // 篇题自动入版心
+  convertS2T = $state(false); // 简→繁（s2t）
+  converted = $state(''); // 转换结果（异步填充）
   pageIdx = $state(0);
   seals = $state<SealSpec[]>([]); // 默认无印——避免首访即拉 21.8MB 篆书字体
   sealFont = $state<Font | null>(null);
   private sealFontRequested = false;
+
+  // 生效正文：开简繁则用转换结果（未就绪时暂用原文）
+  effectiveText = $derived(
+    this.convertS2T && this.converted ? this.converted : this.text,
+  );
+  highRisk = $derived(this.convertS2T ? highRiskChars(this.text) : []);
 
   ensureSealFont() {
     if (this.sealFontRequested) return;
@@ -43,13 +53,22 @@ class AppState {
     THEMES.find((t) => t.id === this.themeId) ?? THEMES[0]!,
   );
   pages = $derived(
-    layout(parse(this.text), this.meta, {
+    layout(parse(this.effectiveText), this.meta, {
       cols: this.cols,
       charsPerCol: this.charsPerCol,
     }),
   );
   curIdx = $derived(Math.max(0, Math.min(this.pageIdx, this.pages.length - 1)));
+  // 当前叶所在篇题（含之前页最后出现的）
+  private chapterAt = $derived.by(() => {
+    if (!this.banxinChapter) return undefined;
+    let cur: string | undefined;
+    for (let i = 0; i <= this.curIdx; i++)
+      for (const c of this.pages[i]?.chapters ?? []) cur = c;
+    return cur;
+  });
   private renderOpts = $derived({
+    banxinChapter: this.chapterAt,
     grid: { cols: this.cols, charsPerCol: this.charsPerCol },
     palette: this.palette,
     frameWidth: this.theme.frameWidth,
@@ -115,6 +134,8 @@ class AppState {
     'fontId',
     'textureStrength',
     'showPunct',
+    'banxinChapter',
+    'convertS2T',
   ] as const;
 
   constructor() {
@@ -148,7 +169,7 @@ class AppState {
   get exportCtx() {
     const { grid: _g, ...render } = this.renderOpts;
     return {
-      text: this.text,
+      text: this.effectiveText,
       meta: this.meta,
       grid: { cols: this.cols, charsPerCol: this.charsPerCol },
       render,

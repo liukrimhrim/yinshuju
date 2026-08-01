@@ -157,6 +157,21 @@
       <input type="checkbox" bind:checked={app.showPunct} />
       显示句读圈点
     </label>
+    <label class="check">
+      <input type="checkbox" bind:checked={app.banxinChapter} />
+      篇题自动入版心
+    </label>
+    <label class="check">
+      <input type="checkbox" bind:checked={app.convertS2T} />
+      简→繁转换（s2t）
+    </label>
+    {#if app.convertS2T && app.highRisk.length}
+      <p class="warn">
+        一简对多繁高危字，请核对：{app.highRisk
+          .map((h) => `${h.ch}×${h.count}`)
+          .join('、')}
+      </p>
+    {/if}
   </section>
 
   <section>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { app } from './lib/state.svelte';
+  import { loadS2T } from './lib/convert';
   import Editor from './lib/components/Editor.svelte';
   import ParamsPanel from './lib/components/ParamsPanel.svelte';
   import Preview from './lib/components/Preview.svelte';
@@ -9,6 +10,14 @@
   $effect(() => app.persist());
   $effect(() => {
     if (app.seals.length) app.ensureSealFont();
+  });
+  $effect(() => {
+    if (!app.convertS2T) return;
+    const src = app.text;
+    loadS2T().then((conv) => {
+      // 仅当正文未再变时落盘，避免竞态旧结果覆盖
+      if (app.text === src) app.converted = conv(src);
+    });
   });
 </script>
 
