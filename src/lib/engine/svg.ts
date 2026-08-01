@@ -31,7 +31,19 @@ export function toCnNum(n: number): string {
   );
 }
 
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+export const esc = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+// djb2 内容哈希 → 滤镜 seed（同内容同貌；印章与页面纹理共用）
+export function contentSeed(s: string): number {
+  let h = 5381;
+  for (const c of s) h = ((h * 33) ^ c.codePointAt(0)!) >>> 0;
+  return (h % 9000) + 1;
+}
+
+// 列槽数：单叶=内容列+半列版心；对开=两组内容列+整列版心
+const slotsFor = (cols: number, mode: 'single' | 'spread') =>
+  mode === 'spread' ? 2 * cols + 1 : cols + 0.5;
 const CT = 'text-anchor="middle" dominant-baseline="central"';
 
 // —— 共享内核 ——
@@ -73,14 +85,11 @@ function makeGeo(o: RenderOptions, slots: number): Geo {
 }
 
 function contentHash(pages: (Page | null)[]): number {
-  let seed = 5381;
-  for (const p of pages)
-    if (p) {
-      for (const ch of p.chars)
-        seed = ((seed * 33) ^ ch.ch.codePointAt(0)!) >>> 0;
-      seed = (seed + p.folio * 97) >>> 0;
-    }
-  return (seed % 9000) + 1;
+  return contentSeed(
+    pages
+      .map((p) => (p ? p.chars.map((c) => c.ch).join('') + p.folio : ''))
+      .join('|'),
+  );
 }
 
 function buildDefs(g: Geo, o: RenderOptions, seed: number): string {
@@ -228,8 +237,7 @@ function assemble(
 
 // 摆位几何（印章等叠加层用）：与渲染同一套公式
 export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
-  const slots = mode === 'spread' ? 2 * o.grid.cols + 1 : o.grid.cols + 0.5;
-  const g = makeGeo(o, slots);
+  const g = makeGeo(o, slotsFor(o.grid.cols, mode));
   return {
     fx0: g.fx0,
     fy0: g.fy0,
@@ -241,7 +249,7 @@ export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
 
 // —— 单半叶：版心=折缝半列（左缘），左框开口 ——
 export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
-  const g = makeGeo(o, o.grid.cols + 0.5);
+  const g = makeGeo(o, slotsFor(o.grid.cols, 'single'));
   const P = o.palette;
   const seed = contentHash([page]);
   const defs = buildDefs(g, o, seed);
@@ -269,7 +277,7 @@ export function renderSpread(
   o: RenderOptions,
 ): string {
   const cols = o.grid.cols;
-  const g = makeGeo(o, 2 * cols + 1);
+  const g = makeGeo(o, slotsFor(cols, 'spread'));
   const P = o.palette;
   const seed = contentHash([pageR, pageL]);
   const defs = buildDefs(g, o, seed);

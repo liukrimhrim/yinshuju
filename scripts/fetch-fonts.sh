@@ -32,5 +32,14 @@ if [ ! -f fonts-src/chongxi_seal.otf ]; then
 fi
 mkdir -p public/fonts/seal
 cp -f fonts-src/chongxi_seal.otf public/fonts/seal/
+cat > public/fonts/seal/LICENSE.txt <<'EOF'
+崇羲篆體 (Chong Xi Small Seal) v1.00
+作者：王心怡、季旭昇
+发布：中央研究院资讯科学研究所「小学堂」 https://xiaoxue.iis.sinica.edu.tw/chongxi/
+授权：CC 姓名标示-禁止改作 3.0 台湾及其后版本 (CC-BY-ND-3.0-TW-or-later)
+     https://xiaoxue.iis.sinica.edu.tw/chongxi/copyright.htm
+
+本站按授权条款原样分发本字体文件（chongxi_seal.otf），未做任何修改。
+EOF
 
 ls -la fonts-src/*.ttf fonts-src/*.otf

@@ -18,7 +18,7 @@
       ? Math.max(0.2, Math.min(4, customW / Math.max(1, customH)))
       : (RATIO_PRESETS.find((r) => r.id === ratioId)?.ratio ?? 16 / 28),
   );
-  const planned = $derived(planFor(app.exportCtx, ratio));
+  const planned = $derived(planFor(app.exportCtx, ratio, app.sealFont));
   const frameCount = $derived(planned.frames.length);
   const safeFrame = $derived(Math.min(frameIdx, frameCount - 1));
   const previewSvg = $derived(planned.svgAt(planned.frames[safeFrame]!));
@@ -28,6 +28,10 @@
   }
 
   const embedWarn = (ok: boolean) => (ok ? '' : ' ⚠ 字体切片缺失，未内嵌');
+  const sealWarn = () =>
+    app.sealMissing.some((m) => !app.seals[m.index]?.kaiFallback)
+      ? ' ⚠ 印章缺字未退楷，将以虚框导出'
+      : '';
 
   async function run(task: () => Promise<void>) {
     busy = true;
@@ -51,7 +55,7 @@
       );
       const name = `${app.meta.banxinTitle || '印书局'}-${ratioId}.${format === 'png' ? 'png' : 'jpg'}`;
       addLink(name, blob);
-      status = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}`;
+      status = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}${sealWarn()}`;
     });
 
   const doPdf = () =>
@@ -65,7 +69,7 @@
         },
       );
       addLink(`${app.meta.banxinTitle || '印书局'}.pdf`, blob);
-      status = `PDF ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}`;
+      status = `PDF ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}${sealWarn()}`;
     });
 </script>
 

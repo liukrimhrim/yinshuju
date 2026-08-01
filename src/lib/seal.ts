@@ -2,6 +2,7 @@
 // 字体 CC-BY-ND（王心怡、季旭昇）：整包原样分发、不子集；渲染输出为图形，非字体改作。
 import type { Font } from 'opentype.js';
 import type { Palette } from './engine/themes';
+import { esc, contentSeed } from './engine/svg';
 
 export interface SealSpec {
   text: string;
@@ -28,7 +29,10 @@ export function loadSealFont(): Promise<Font> {
         await fetch('fonts/seal/chongxi_seal.otf')
       ).arrayBuffer();
       return opentype.parse(buf);
-    })();
+    })().catch((e) => {
+      fontPromise = null; // 失败不缓存，允许重试
+      throw e;
+    });
   }
   return fontPromise;
 }
@@ -60,12 +64,6 @@ export function arrangeSeal(n: number): SealCell[] {
 
 // —— 单枚印面 SVG（原点在左上，返回宽高供摆位） ——
 
-const hashOf = (s: string) => {
-  let h = 5381;
-  for (const c of s) h = ((h * 33) ^ c.codePointAt(0)!) >>> 0;
-  return (h % 9000) + 1;
-};
-
 export interface SealArt {
   body: string;
   w: number;
@@ -86,7 +84,7 @@ export function buildSealSVG(
   const h = spec.shape === 'ellipse' ? size * 1.4 : size;
   const missing = font ? missingChars(font, chars.join('')) : [];
   const usePath = font !== null && (missing.length === 0 || !spec.kaiFallback);
-  const seed = hashOf(spec.text + spec.style + spec.shape);
+  const seed = contentSeed(spec.text + spec.style + spec.shape);
   const fid = `se${seed}`;
   const red = palette.seal;
   const pad = size * 0.11;
@@ -132,7 +130,7 @@ export function buildSealSVG(
       glyphsEl += `<rect x="${cx - fs / 2.6}" y="${cy - fs / 2.6}" width="${fs / 1.3}" height="${fs / 1.3}" fill="none" stroke="${glyphFill}" stroke-width="2" stroke-dasharray="4 3"/>`;
     } else {
       // 整印退用正文字体（史据：宋楷官印、明清隶楷藏书印）
-      glyphsEl += `<text x="${cx}" y="${cy}" font-size="${fs.toFixed(1)}" fill="${glyphFill}" font-family="${fallbackFamily}" text-anchor="middle" dominant-baseline="central">${ch}</text>`;
+      glyphsEl += `<text x="${cx}" y="${cy}" font-size="${fs.toFixed(1)}" fill="${glyphFill}" font-family="${fallbackFamily}" text-anchor="middle" dominant-baseline="central">${esc(ch)}</text>`;
     }
   }
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { app } from '../state.svelte';
   import { THEMES, FONTS } from '../engine/themes';
-  import { SEAL_SLOTS, type SealSpec } from '../seal';
+  import { SEAL_SLOTS } from '../seal';
 
   function addSeal() {
     app.seals = [

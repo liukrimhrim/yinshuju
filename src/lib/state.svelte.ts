@@ -29,15 +29,7 @@ class AppState {
   textureStrength = $state(0.6);
   showPunct = $state(true);
   pageIdx = $state(0);
-  seals = $state<SealSpec[]>([
-    {
-      text: '印書局製',
-      style: 'bai',
-      shape: 'square',
-      slot: 'authorBelow',
-      kaiFallback: false,
-    },
-  ]);
+  seals = $state<SealSpec[]>([]); // 默认无印——避免首访即拉 21.8MB 篆书字体
   sealFont = $state<Font | null>(null);
   private sealFontRequested = false;
 
