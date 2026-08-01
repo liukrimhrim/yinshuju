@@ -19,7 +19,8 @@ export interface NoteChar {
   punct?: PunctKind; // 注内句读，附着于本注字
 }
 
-export type Block = { type: 'chapter'; text: string } | { type: 'para'; runs: Run[] };
+export type Block =
+  { type: 'chapter'; text: string } | { type: 'para'; runs: Run[] };
 
 // —— 布局输出：纯网格坐标（几何换算归 svg 层） ——
 

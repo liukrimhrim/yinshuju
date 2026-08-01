@@ -35,7 +35,10 @@ describe('markup v1 解析', () => {
         { ch: '定', punct: 'ju' },
       ],
     });
-    expect(runs[5]).toEqual({ t: 'note', chars: [{ ch: 's' }, { ch: 'a' }, { ch: 'g' }, { ch: 'e' }] });
+    expect(runs[5]).toEqual({
+      t: 'note',
+      chars: [{ ch: 's' }, { ch: 'a' }, { ch: 'g' }, { ch: 'e' }],
+    });
   });
 
   it('未闭合括号吃到块尾，不炸', () => {

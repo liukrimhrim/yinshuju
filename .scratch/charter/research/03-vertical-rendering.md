@@ -61,15 +61,15 @@ PDF v1 用 pdf-lib 逐页嵌 PNG（16×28cm = 453.54×793.70pt，尺寸精确、
 
 ## 导出手段逐一查证
 
-| 手段 | 竖排 CJK + webfont 实况 | 判定 |
-|---|---|---|
-| html2canvas | 自绘引擎**不支持 writing-mode**（#1258、#1942，常年 open）；1.4.1 停在 2022-01，作者自称实验品勿上生产 | **排除** |
-| html-to-image / dom-to-image-more | foreignObject 让浏览器自渲染，Chrome/FF 竖排原理上可行；但 Safari/iOS 空白图、字体丢失成灾（#461、#488、#199、#361） | 不作为依赖 |
-| satori | 官方 CSS 支持表**无 writing-mode**；明言不支持 OpenType 特性/RTL，不支持 WOFF2 | **排除** |
-| SnapDOM (@zumer/snapdom) | 2025 起活跃、口碑替代 html2canvas；同为 foreignObject 系→竖排随浏览器走；issue 里无竖排专属恶性 bug，但有像素漂移类问题（#421）；自动内嵌 @font-face | 若走 DOM 路线它是最优截图器；B 路线下不需要 |
-| 原生 SVG foreignObject→canvas | 自己造 html-to-image：字体必须 data-URI 内嵌（img 上下文禁外链）；同源/data URL 不污染 canvas；Safari foreignObject 老 bug 一箩筐（2025-07 才修一批） | 仅 DOM 备选 |
-| SVG `<text>`→canvas（B 路线） | per-char 定位全浏览器一致；字体内嵌 + Safari 转 path 兜底 | **主路线** |
-| OffscreenCanvas + DPR | 导出走显式目标像素（如 2160×3840），与 DPR 无关；OffscreenCanvas（Safari 16.4+）仅在 worker 批量出图时才值得用 | 按需 |
+| 手段                              | 竖排 CJK + webfont 实况                                                                                                                               | 判定                                        |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| html2canvas                       | 自绘引擎**不支持 writing-mode**（#1258、#1942，常年 open）；1.4.1 停在 2022-01，作者自称实验品勿上生产                                                | **排除**                                    |
+| html-to-image / dom-to-image-more | foreignObject 让浏览器自渲染，Chrome/FF 竖排原理上可行；但 Safari/iOS 空白图、字体丢失成灾（#461、#488、#199、#361）                                  | 不作为依赖                                  |
+| satori                            | 官方 CSS 支持表**无 writing-mode**；明言不支持 OpenType 特性/RTL，不支持 WOFF2                                                                        | **排除**                                    |
+| SnapDOM (@zumer/snapdom)          | 2025 起活跃、口碑替代 html2canvas；同为 foreignObject 系→竖排随浏览器走；issue 里无竖排专属恶性 bug，但有像素漂移类问题（#421）；自动内嵌 @font-face  | 若走 DOM 路线它是最优截图器；B 路线下不需要 |
+| 原生 SVG foreignObject→canvas     | 自己造 html-to-image：字体必须 data-URI 内嵌（img 上下文禁外链）；同源/data URL 不污染 canvas；Safari foreignObject 老 bug 一箩筐（2025-07 才修一批） | 仅 DOM 备选                                 |
+| SVG `<text>`→canvas（B 路线）     | per-char 定位全浏览器一致；字体内嵌 + Safari 转 path 兜底                                                                                             | **主路线**                                  |
+| OffscreenCanvas + DPR             | 导出走显式目标像素（如 2160×3840），与 DPR 无关；OffscreenCanvas（Safari 16.4+）仅在 worker 批量出图时才值得用                                        | 按需                                        |
 
 ## PDF
 
@@ -92,6 +92,7 @@ PDF v1 用 pdf-lib 逐页嵌 PNG（16×28cm = 453.54×793.70pt，尺寸精确、
 ```
 
 **原型必须验证的风险（按杀伤力排序）**
+
 1. Safari 的 SVG-as-image 字体渲染：data-URI woff2/ttf 是否稳定；不稳则导出统一走 text→path（顺带验证 opentype.js 中文字形正确性）。
 2. 标点竖排形：思源宋体 `vert` GSUB 读取/映射表方案，覆盖 、。：；！？「」『』（）——…… 。
 3. 中文字体体积：全量 5–20MB，需子集化（构建期 pyftsubset 按需切，或运行时对本文取 unicode 子集）。

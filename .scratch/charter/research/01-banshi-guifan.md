@@ -7,26 +7,26 @@
 
 ## 1. 术语表
 
-| 术语 | 定义 | 来源 |
-|---|---|---|
-| 版框（边栏） | 围住版面文字的四周边线；上栏/下栏/左右栏 | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103) |
-| 四周单边 | 四周只印一道粗黑边线 | 同上 |
-| 四周双边 | 四周粗黑线内侧再刻一细黑线 | 同上 |
-| 左右双边 | 仅左右粗线内侧有细线，上下仍单线 | 同上 |
-| 文武边栏 | 即「外粗（武）内细（文）」的双边形式的别称 | [搜狐·古籍版式常识](https://www.sohu.com/a/120724133_488447) |
-| 界行/界格 | 版框内分割字行的直线；两线间条格为界格；红色印称朱丝栏、黑色称乌丝栏 | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)、[古书网](https://gushu.net.cn/index.php/cms/show-94.html) |
-| 版心（叶心/中缝） | 两半叶之间无正文的一行，对折基准；宽度约合正文一行（李文§四） | [李文](https://twfineartsarchive.ntmofa.gov.tw/QuarterlyFile/P0610400.pdf) |
-| 书口/版口 | 装订后开合一侧端面，即折叠后的版心外露处 | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103) |
-| 象鼻 | 鱼尾上下至版框之间的条状区域/黑线 | 同上 |
-| 黑口/白口/花口 | 象鼻处刷墨成线为黑口（粗=大黑口，细=小黑口）；不着墨为白口；版心刻有文字为花口 | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)、[李文](https://twfineartsarchive.ntmofa.gov.tw/QuarterlyFile/P0610400.pdf) |
-| 鱼尾 | 版心中鱼尾形符号，标示中缝线、作折叶基准；刻于距版心上边约 1/4 处 | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103) |
-| 单/双/三鱼尾 | 版心内鱼尾个数；双鱼尾又分「相随（顺鱼尾，同向）」与「相对（对鱼尾，尾尖相向）」（李文§四(一)） | [李文](https://twfineartsarchive.ntmofa.gov.tw/QuarterlyFile/P0610400.pdf) |
-| 黑/白/花鱼尾 | 实心墨色/空心线描/带花饰的鱼尾 | 同上 |
-| 天头 | 上栏以外的空白纸（又称书眉） | [北大古委会](https://gwh.pku.edu.cn/info/1159/1203.htm) |
-| 地脚 | 下栏以外的空白纸 | 同上 |
-| 书耳/耳题 | 版框外左上角小方格，内刻简化篇名（耳题/耳记）；多见于宋蝴蝶装，线装流行后渐消失 | [古书网](https://gushu.net.cn/index.php/cms/show-94.html) |
-| 行款/行格 | 正文行数与每行字数，按半叶著录为「半叶 N 行 M 字」，注文著录「小字双行每行 X 字」 | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103) |
-| 牌记 | 类似版权页的刊记（书名、刻者、堂号、年代等），多在序目后或卷末 | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103) |
+| 术语              | 定义                                                                                            | 来源                                                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 版框（边栏）      | 围住版面文字的四周边线；上栏/下栏/左右栏                                                        | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)                                                                             |
+| 四周单边          | 四周只印一道粗黑边线                                                                            | 同上                                                                                                                                           |
+| 四周双边          | 四周粗黑线内侧再刻一细黑线                                                                      | 同上                                                                                                                                           |
+| 左右双边          | 仅左右粗线内侧有细线，上下仍单线                                                                | 同上                                                                                                                                           |
+| 文武边栏          | 即「外粗（武）内细（文）」的双边形式的别称                                                      | [搜狐·古籍版式常识](https://www.sohu.com/a/120724133_488447)                                                                                   |
+| 界行/界格         | 版框内分割字行的直线；两线间条格为界格；红色印称朱丝栏、黑色称乌丝栏                            | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)、[古书网](https://gushu.net.cn/index.php/cms/show-94.html)                  |
+| 版心（叶心/中缝） | 两半叶之间无正文的一行，对折基准；宽度约合正文一行（李文§四）                                   | [李文](https://twfineartsarchive.ntmofa.gov.tw/QuarterlyFile/P0610400.pdf)                                                                     |
+| 书口/版口         | 装订后开合一侧端面，即折叠后的版心外露处                                                        | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)                                                                             |
+| 象鼻              | 鱼尾上下至版框之间的条状区域/黑线                                                               | 同上                                                                                                                                           |
+| 黑口/白口/花口    | 象鼻处刷墨成线为黑口（粗=大黑口，细=小黑口）；不着墨为白口；版心刻有文字为花口                  | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)、[李文](https://twfineartsarchive.ntmofa.gov.tw/QuarterlyFile/P0610400.pdf) |
+| 鱼尾              | 版心中鱼尾形符号，标示中缝线、作折叶基准；刻于距版心上边约 1/4 处                               | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)                                                                             |
+| 单/双/三鱼尾      | 版心内鱼尾个数；双鱼尾又分「相随（顺鱼尾，同向）」与「相对（对鱼尾，尾尖相向）」（李文§四(一)） | [李文](https://twfineartsarchive.ntmofa.gov.tw/QuarterlyFile/P0610400.pdf)                                                                     |
+| 黑/白/花鱼尾      | 实心墨色/空心线描/带花饰的鱼尾                                                                  | 同上                                                                                                                                           |
+| 天头              | 上栏以外的空白纸（又称书眉）                                                                    | [北大古委会](https://gwh.pku.edu.cn/info/1159/1203.htm)                                                                                        |
+| 地脚              | 下栏以外的空白纸                                                                                | 同上                                                                                                                                           |
+| 书耳/耳题         | 版框外左上角小方格，内刻简化篇名（耳题/耳记）；多见于宋蝴蝶装，线装流行后渐消失                 | [古书网](https://gushu.net.cn/index.php/cms/show-94.html)                                                                                      |
+| 行款/行格         | 正文行数与每行字数，按半叶著录为「半叶 N 行 M 字」，注文著录「小字双行每行 X 字」               | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)                                                                             |
+| 牌记              | 类似版权页的刊记（书名、刻者、堂号、年代等），多在序目后或卷末                                  | [北保中心](https://www.bjgujibaohu.com/ylyj/default/detail?id=103)                                                                             |
 
 ## 2. 版心内容排布（自上而下）
 

@@ -26,7 +26,12 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
   const freshCol = () => {
     if (half > 0) advanceCol();
   };
-  const placeVert = (text: string, atCol: number, startHalf: number, role: PlacedChar['role']) => {
+  const placeVert = (
+    text: string,
+    atCol: number,
+    startHalf: number,
+    role: PlacedChar['role'],
+  ) => {
     let h = startHalf;
     for (const ch of text) {
       if (h + 2 > HMAX) break; // 特殊列不换列，截断保护

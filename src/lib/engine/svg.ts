@@ -25,7 +25,11 @@ export function toCnNum(n: number): string {
   if (n < 10) return CN_DIGITS[n - 1]!;
   const tens = Math.floor(n / 10);
   const ones = n % 10;
-  return (tens > 1 ? CN_DIGITS[tens - 1]! : '') + '十' + (ones ? CN_DIGITS[ones - 1]! : '');
+  return (
+    (tens > 1 ? CN_DIGITS[tens - 1]! : '') +
+    '十' +
+    (ones ? CN_DIGITS[ones - 1]! : '')
+  );
 }
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -91,7 +95,13 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
   const c = colW * 0.42;
   const yF = fy0 + FISHTAIL_POS * frameH;
   const bxFs = Math.min(17, fs * 0.44);
-  const vert = (text: string, x: number, yStart: number, size: number, fill: string) => {
+  const vert = (
+    text: string,
+    x: number,
+    yStart: number,
+    size: number,
+    fill: string,
+  ) => {
     let out = '';
     let y = yStart;
     for (const ch of text) {
@@ -102,16 +112,27 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
   };
   let banxin = `<path d="M${fx0 - colW / 2},${yF} h${colW} v${d} l${-colW / 2},${-c} l${-colW / 2},${c} z" fill="${P.frame}"/>`;
   banxin += vert(meta.banxinTitle, fx0, yF + d + 14, bxFs, P.text);
-  banxin += vert(meta.banxinJuan, fx0, yF + d + 14 + 3.2 * (bxFs + 5), bxFs, P.text);
+  banxin += vert(
+    meta.banxinJuan,
+    fx0,
+    yF + d + 14 + 3.2 * (bxFs + 5),
+    bxFs,
+    P.text,
+  );
   banxin += vert(toCnNum(page.folio), fx0, fy0 + frameH * 0.78, bxFs, P.text);
   frame += `<g clip-path="url(#pc)">${banxin}</g>`;
 
   // —— 文字与圈点 ——
-  const charFs = (ch: PlacedChar) => (ch.kind === 'note' ? noteFs : ch.role === 'author' ? fs * 0.85 : fs);
+  const charFs = (ch: PlacedChar) =>
+    ch.kind === 'note' ? noteFs : ch.role === 'author' ? fs * 0.85 : fs;
   const charX = (ch: PlacedChar) =>
-    ch.kind === 'note' ? colX(ch.col) + colW * (ch.sub === 'L' ? 0.26 : 0.74) : colX(ch.col) + colW / 2;
+    ch.kind === 'note'
+      ? colX(ch.col) + colW * (ch.sub === 'L' ? 0.26 : 0.74)
+      : colX(ch.col) + colW / 2;
   const charY = (ch: PlacedChar) =>
-    ch.kind === 'note' ? fy0 + ch.half * (cellH / 2) + cellH / 4 : fy0 + (ch.half / 2) * cellH + cellH / 2;
+    ch.kind === 'note'
+      ? fy0 + ch.half * (cellH / 2) + cellH / 4
+      : fy0 + (ch.half / 2) * cellH + cellH / 2;
 
   let text = '';
   let marks = '';

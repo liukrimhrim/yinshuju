@@ -6,14 +6,14 @@
 
 ## 1. 篆书字体盘点（授权一手证据）
 
-| 字体 | 风格 | 商用 | 改作/子集化 | 一手证据 |
-|---|---|---|---|---|
-| **全字库说文解字** | 说文小篆（大徐本），6721 字 | ✅ | ✅ | [官网字型下载页](https://www.cns11643.gov.tw/downloadList.jsp?ID=2&ID2=20&la=1)；条款为[政府資料開放授權條款第 1 版](https://data.gov.tw/license) |
-| **崇羲篆体** | 小篆（依《说文》），王心怡×季旭昇，收字量大 | ✅ | ❌ 禁止改作 | [官网](https://xiaoxue.iis.sinica.edu.tw/chongxi/)授权页原文：采 CC-BY-ND-3.0-TW-or-later |
-| **峄山碑篆体** | 秦刻石复刻小篆 | 声称✅ | 未知 | 仅[猫啃网转述](https://www.maoken.com/freefonts/21952.html)"作者声明授权"，**一手声明链接未核实** |
-| 方正小篆体 | 小篆（张永明） | ❌ 需购买 | — | [方正官网产品页](https://www.foundertype.com/index.php/FontInfo/index/id/165)；方正免费商用仅黑体/书宋/仿宋/楷体四款 |
-| 汉仪篆书繁 | 篆书 | ❌ 需购买 | — | [汉仪官网](https://www.hanyi.com.cn/productdetail.php?id=450)：仅个人非商用免费 |
-| 汉鼎繁印篆 | 印篆/摹印篆味 | **未核实** | — | 90 年代旧字库，查无任何授权文本，按不可商用处理 |
+| 字体               | 风格                                        | 商用       | 改作/子集化 | 一手证据                                                                                                                                          |
+| ------------------ | ------------------------------------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **全字库说文解字** | 说文小篆（大徐本），6721 字                 | ✅         | ✅          | [官网字型下载页](https://www.cns11643.gov.tw/downloadList.jsp?ID=2&ID2=20&la=1)；条款为[政府資料開放授權條款第 1 版](https://data.gov.tw/license) |
+| **崇羲篆体**       | 小篆（依《说文》），王心怡×季旭昇，收字量大 | ✅         | ❌ 禁止改作 | [官网](https://xiaoxue.iis.sinica.edu.tw/chongxi/)授权页原文：采 CC-BY-ND-3.0-TW-or-later                                                         |
+| **峄山碑篆体**     | 秦刻石复刻小篆                              | 声称✅     | 未知        | 仅[猫啃网转述](https://www.maoken.com/freefonts/21952.html)"作者声明授权"，**一手声明链接未核实**                                                 |
+| 方正小篆体         | 小篆（张永明）                              | ❌ 需购买  | —           | [方正官网产品页](https://www.foundertype.com/index.php/FontInfo/index/id/165)；方正免费商用仅黑体/书宋/仿宋/楷体四款                              |
+| 汉仪篆书繁         | 篆书                                        | ❌ 需购买  | —           | [汉仪官网](https://www.hanyi.com.cn/productdetail.php?id=450)：仅个人非商用免费                                                                   |
+| 汉鼎繁印篆         | 印篆/摹印篆味                               | **未核实** | —           | 90 年代旧字库，查无任何授权文本，按不可商用处理                                                                                                   |
 
 要点：
 
@@ -24,11 +24,11 @@
 
 ## 2. 现成生成器先例
 
-| 项目 | 许可 | 实现 | 可借用点 |
-|---|---|---|---|
-| [vYinn](https://github.com/shanleiguang/vYinn)（中文古籍印章制作工具） | MIT | Perl + ImageMagick，输出透明 PNG | **功能范式最对口**：阴文/阳文、圆/方/椭圆印框、"做残、油墨、扩散"效果、按字体属性自动修正字距。Perl 不能进前端，但参数设计照抄 |
-| [DrawStampUtils](https://github.com/xxss0903/drawstamputils)（1.6k★） | Apache-2.0 | TypeScript + Canvas，导出 PNG/SVG | 前端做旧的现成参考：毛边 IRoughEdge、做旧 IAgingEffectParams 参数化。但面向现代公章（圆/椭圆+五角星），无方形藏书印、无篆书排印 |
-| [SealUtil](https://github.com/localhost02/SealUtil)、[pansyjs/seal](https://github.com/pansyjs/seal)、my_seal 等 | 各异 | Java Graphics2D / Canvas | 均现代公章向，参考价值低 |
+| 项目                                                                                                             | 许可       | 实现                              | 可借用点                                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------- | ---------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [vYinn](https://github.com/shanleiguang/vYinn)（中文古籍印章制作工具）                                           | MIT        | Perl + ImageMagick，输出透明 PNG  | **功能范式最对口**：阴文/阳文、圆/方/椭圆印框、"做残、油墨、扩散"效果、按字体属性自动修正字距。Perl 不能进前端，但参数设计照抄  |
+| [DrawStampUtils](https://github.com/xxss0903/drawstamputils)（1.6k★）                                            | Apache-2.0 | TypeScript + Canvas，导出 PNG/SVG | 前端做旧的现成参考：毛边 IRoughEdge、做旧 IAgingEffectParams 参数化。但面向现代公章（圆/椭圆+五角星），无方形藏书印、无篆书排印 |
+| [SealUtil](https://github.com/localhost02/SealUtil)、[pansyjs/seal](https://github.com/pansyjs/seal)、my_seal 等 | 各异       | Java Graphics2D / Canvas          | 均现代公章向，参考价值低                                                                                                        |
 
 结论：**没有"前端 SVG 藏书印"的现成轮子**，但 vYinn（功能清单）+ DrawStampUtils（前端做旧参数）拼起来就是方案，两者许可（MIT/Apache-2.0）都允许借鉴移植。自研量不大。
 

@@ -30,7 +30,8 @@ export function parse(src: string): Block[] {
   if (!trimmed) return [];
   return trimmed.split(/\n\s*\n/).map((raw): Block => {
     const b = raw.trim();
-    if (b.startsWith('#')) return { type: 'chapter', text: b.replace(/^#+\s*/, '') };
+    if (b.startsWith('#'))
+      return { type: 'chapter', text: b.replace(/^#+\s*/, '') };
     const runs: Run[] = [];
     let i = 0;
     while (i < b.length) {

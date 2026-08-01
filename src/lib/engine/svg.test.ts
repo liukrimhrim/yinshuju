@@ -5,9 +5,18 @@ import { renderPage, toCnNum } from './svg';
 import { THEMES } from './themes';
 import type { Meta } from './types';
 
-const meta: Meta = { title: '鬼谷子疏解卷第一', author: '戰國鬼谷子撰', banxinTitle: '鬼谷子', banxinJuan: '卷一' };
+const meta: Meta = {
+  title: '鬼谷子疏解卷第一',
+  author: '戰國鬼谷子撰',
+  banxinTitle: '鬼谷子',
+  banxinJuan: '卷一',
+};
 const grid = { cols: 10, charsPerCol: 18 };
-const page = layout(parse('# 捭闔第一\n\n粤若稽古（考察），圣人。'), meta, grid)[0]!;
+const page = layout(
+  parse('# 捭闔第一\n\n粤若稽古（考察），圣人。'),
+  meta,
+  grid,
+)[0]!;
 
 const opts = (themeId: string, showPunct = true) => {
   const t = THEMES.find((x) => x.id === themeId)!;
@@ -41,12 +50,16 @@ describe('SVG 渲染', () => {
 
   it('句读圈点可整体关闭', () => {
     expect(renderPage(page, meta, opts('zhusilan', true))).toContain('<circle');
-    expect(renderPage(page, meta, opts('zhusilan', false))).not.toContain('<circle');
+    expect(renderPage(page, meta, opts('zhusilan', false))).not.toContain(
+      '<circle',
+    );
   });
 
   it('夹注字号为正文一半', () => {
     const svg = renderPage(page, meta, opts('zhusilan'));
-    const sizes = [...svg.matchAll(/font-size="([\d.]+)"/g)].map((m) => Number(m[1]));
+    const sizes = [...svg.matchAll(/font-size="([\d.]+)"/g)].map((m) =>
+      Number(m[1]),
+    );
     const max = Math.max(...sizes);
     expect(sizes).toContain(Number((max / 2).toFixed(1)));
   });
