@@ -21,6 +21,19 @@
   const missingOf = (i: number) =>
     app.sealMissing.find((m) => m.index === i)?.chars.join(' ') ?? '';
 
+  let fontFile: HTMLInputElement;
+  async function onFontUpload(e: Event) {
+    const file = (e.currentTarget as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const data = await file.arrayBuffer();
+    const face = new FontFace('User Upload', data);
+    await face.load();
+    document.fonts.add(face);
+    app.uploadFont = { name: file.name, data };
+    app.fontId = 'upload';
+    fontFile.value = '';
+  }
+
   const PRESETS = [
     { label: '黄善夫本 · 十行十八字', cols: 10, chars: 18 },
     { label: '殿本岳氏 · 八行十七字', cols: 8, chars: 17 },
@@ -129,9 +142,26 @@
     <label for="p-font">字体</label>
     <select id="p-font" bind:value={app.fontId}>
       {#each FONTS as f (f.id)}
-        <option value={f.id}>{f.label}</option>
+        {#if f.id !== 'upload' || app.uploadFont}
+          <option value={f.id}
+            >{f.id === 'upload'
+              ? `上传：${app.uploadFont?.name}`
+              : f.label}</option
+          >
+        {/if}
       {/each}
     </select>
+    <button onclick={() => fontFile.click()}>上传字体（TTF/OTF）</button>
+    <input
+      type="file"
+      accept=".ttf,.otf,font/ttf,font/otf"
+      hidden
+      bind:this={fontFile}
+      onchange={onFontUpload}
+    />
+    {#if app.fontId === 'upload'}
+      <p class="hint">上传字体仅本次会话有效；授权自负。超 8MB 导出不内嵌。</p>
+    {/if}
   </section>
 
   {#if app.theme.texture}

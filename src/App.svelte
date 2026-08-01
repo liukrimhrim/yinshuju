@@ -1,6 +1,34 @@
 <script lang="ts">
   import { app } from './lib/state.svelte';
   import { loadS2T } from './lib/convert';
+  import { exportImage } from './lib/export';
+  import { BASE_RATIO } from './lib/engine/geometry';
+
+  let selftest = $state<{ ok: boolean; detail: string; url?: string } | null>(
+    null,
+  );
+  $effect(() => {
+    if (!new URLSearchParams(location.search).has('selftest')) return;
+    exportImage(app.exportCtx, BASE_RATIO, 0, {
+      format: 'png',
+      quality: 0.92,
+      scale: 2,
+    })
+      .then(({ blob, w, h, fontEmbedded }) => {
+        selftest = {
+          ok: fontEmbedded,
+          detail: `SELFTEST ${fontEmbedded ? 'OK' : 'DEGRADED'} ${w}x${h} ${Math.round(blob.size / 1024)}KB`,
+          url: URL.createObjectURL(blob),
+        };
+      })
+      .catch(
+        (e) =>
+          (selftest = {
+            ok: false,
+            detail: 'SELFTEST FAIL: ' + (e as Error).message,
+          }),
+      );
+  });
   import Editor from './lib/components/Editor.svelte';
   import ParamsPanel from './lib/components/ParamsPanel.svelte';
   import Preview from './lib/components/Preview.svelte';
@@ -20,6 +48,13 @@
     });
   });
 </script>
+
+{#if selftest}
+  <div class="selftest" class:fail={!selftest.ok}>
+    <strong>{selftest.detail}</strong>
+    {#if selftest.url}<img src={selftest.url} alt="导出自测结果" />{/if}
+  </div>
+{/if}
 
 <div class="shell">
   <aside>
@@ -93,6 +128,28 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
+  }
+  .selftest {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: #0f2e18;
+    color: #d6f5dd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 16px;
+    overflow: auto;
+    font-size: 18px;
+  }
+  .selftest.fail {
+    background: #3a1210;
+    color: #ffd9d4;
+  }
+  .selftest img {
+    max-height: 82vh;
+    max-width: 92vw;
   }
   @media (max-width: 760px) {
     .shell {

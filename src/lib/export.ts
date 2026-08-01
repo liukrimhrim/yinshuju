@@ -39,8 +39,29 @@ interface Manifest {
 let manifestCache: Manifest | null = null;
 const sliceB64Cache = new Map<string, string>();
 
-async function fontCSSFor(fontId: FontId, usedText: string): Promise<string> {
+const UPLOAD_EMBED_LIMIT = 8 * 1024 * 1024;
+
+function bufToB64(buf: ArrayBuffer): string {
+  let bin = '';
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+async function fontCSSFor(
+  fontId: FontId,
+  usedText: string,
+  uploadData?: ArrayBuffer | null,
+): Promise<string> {
   if (fontId === 'serif') return '';
+  if (fontId === 'upload') {
+    // 上传字体：≤8MB 整包内嵌（运行时子集化留后续）；超限返回空 → 降级警示
+    if (!uploadData || uploadData.byteLength > UPLOAD_EMBED_LIMIT) return '';
+    const tag = new TextDecoder('latin1').decode(uploadData.slice(0, 4));
+    const mime = tag === 'OTTO' ? 'font/otf' : 'font/ttf';
+    return `@font-face{font-family:'User Upload';src:url(data:${mime};base64,${bufToB64(uploadData)});}`;
+  }
   if (!manifestCache) {
     const res = await fetch('fonts/manifest.json');
     if (!res.ok) return ''; // 无切片（本地未构建字体）→ 依赖查看端字体
@@ -60,12 +81,7 @@ async function fontCSSFor(fontId: FontId, usedText: string): Promise<string> {
     hit.map(async (s) => {
       let b64 = sliceB64Cache.get(s.file);
       if (!b64) {
-        const buf = await (await fetch(`fonts/${s.file}`)).arrayBuffer();
-        let bin = '';
-        const bytes = new Uint8Array(buf);
-        for (let i = 0; i < bytes.length; i += 0x8000)
-          bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-        b64 = btoa(bin);
+        b64 = bufToB64(await (await fetch(`fonts/${s.file}`)).arrayBuffer());
         sliceB64Cache.set(s.file, b64);
       }
       const ranges = s.ranges
@@ -104,6 +120,7 @@ export interface ExportContext {
   render: Omit<RenderOptions, 'grid' | 'pageW' | 'pageH' | 'overlays'>;
   fontId: FontId;
   seals: SealSpec[];
+  uploadData: ArrayBuffer | null;
 }
 
 export function planFor(
@@ -186,7 +203,7 @@ export async function exportImage(
 ): Promise<ImageResult> {
   const sealFont = ctx.seals.length ? await loadSealFont() : null;
   const { plan, svgAt } = planFor(ctx, ratio, sealFont);
-  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx));
+  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx), ctx.uploadData);
   const svg = withFontCSS(svgAt(frameIdx), css);
   const cv = await svgToCanvas(svg, plan.pageW, plan.pageH, opts.scale);
   const blob = await new Promise<Blob>((res, rej) =>
@@ -223,7 +240,7 @@ export async function exportPdf(
     await import('pdf-lib');
   const sealFont = ctx.seals.length ? await loadSealFont() : null;
   const { pages, svgAt, plan } = planFor(ctx, BASE_RATIO, sealFont);
-  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx));
+  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx), ctx.uploadData);
   const doc = await PDFDocument.create();
   doc.setTitle(ctx.meta.title);
 

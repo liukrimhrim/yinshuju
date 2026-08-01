@@ -10,7 +10,7 @@ export interface Palette {
   seal: string;
 }
 
-export type FontId = 'zhuque' | 'huiwen' | 'serif';
+export type FontId = 'zhuque' | 'huiwen' | 'twkai' | 'upload' | 'serif';
 
 export interface Theme {
   id: string;
@@ -93,8 +93,16 @@ export const DEFAULT_THEME_ID = 'zhusilan';
 export const FONTS: readonly { id: FontId; label: string; family: string }[] = [
   { id: 'zhuque', label: '朱雀仿宋', family: "'Zhuque Fangsong'" },
   { id: 'huiwen', label: '汇文明朝', family: "'Huiwen Mincho'" },
+  { id: 'twkai', label: '全字库正楷', family: "'TW-Kai'" },
+  { id: 'upload', label: '上传字体', family: "'User Upload'" },
   { id: 'serif', label: '系统衬线', family: 'serif' },
 ] as const;
 
-export const fontFamily = (id: FontId): string =>
-  (FONTS.find((f) => f.id === id) ?? FONTS[2]!).family + ', serif';
+// 兜底链（字体票）：主字体 → TW-Kai（生僻字之王）→ 系统衬线
+export const fontFamily = (id: FontId): string => {
+  const fam = (FONTS.find((f) => f.id === id) ?? FONTS[FONTS.length - 1]!)
+    .family;
+  return id === 'twkai' || id === 'serif'
+    ? fam + ', serif'
+    : fam + ", 'TW-Kai', serif";
+};

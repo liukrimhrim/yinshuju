@@ -14,6 +14,8 @@ CHUNK = 800  # 每片码位数
 FONTS = [
     ('huiwen', 'Huiwen Mincho', ROOT / 'fonts-src' / 'huiwen.ttf'),
     ('zhuque', 'Zhuque Fangsong', ROOT / 'fonts-src' / 'zhuque.ttf'),
+    # 全字库正楷（政府开放授权/OFL 双授权，选 OFL：可自由子集）；兜底+印章退楷
+    ('twkai', 'TW-Kai', ROOT / 'fonts-src' / 'TW-Kai-98_1.ttf'),
 ]
 
 

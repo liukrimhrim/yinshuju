@@ -35,6 +35,7 @@ class AppState {
   pageIdx = $state(0);
   seals = $state<SealSpec[]>([]); // 默认无印——避免首访即拉 21.8MB 篆书字体
   sealFont = $state<Font | null>(null);
+  uploadFont = $state<{ name: string; data: ArrayBuffer } | null>(null); // 会话级，不持久化
   private sealFontRequested = false;
 
   // 生效正文：开简繁则用转换结果（未就绪时暂用原文）
@@ -90,14 +91,14 @@ class AppState {
       this.sealFont,
       pageGeo(base, 'single'),
       this.palette,
-      fontFamily(this.fontId),
+      fontFamily('twkai'),
     );
     const spread = sealOverlaysFor(
       this.seals,
       this.sealFont,
       pageGeo({ ...base, pageW: SPREAD_PAGE_W, pageH: BASE_PAGE_H }, 'spread'),
       this.palette,
-      fontFamily(this.fontId),
+      fontFamily('twkai'),
     );
     return { single: single.svg, spread: spread.svg, missing: single.missing };
   });
@@ -175,6 +176,7 @@ class AppState {
       render,
       fontId: this.fontId,
       seals: this.seals,
+      uploadData: this.uploadFont?.data ?? null,
     };
   }
 
