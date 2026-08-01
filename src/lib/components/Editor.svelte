@@ -1,5 +1,21 @@
 <script lang="ts">
   import { app } from '../state.svelte';
+
+  let fileInput: HTMLInputElement;
+
+  function exportTxt() {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([app.text], { type: 'text/plain' }));
+    a.download = `${app.meta.title || '印书局'}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function importTxt(e: Event) {
+    const file = (e.currentTarget as HTMLInputElement).files?.[0];
+    if (file) app.text = await file.text();
+    fileInput.value = '';
+  }
 </script>
 
 <div class="editor">
@@ -28,6 +44,17 @@
   <p class="hint">
     （括号）＝双行夹注 · 标点自动化作句读圈点 · 空行＝提行 · #行＝篇题
   </p>
+  <div class="io">
+    <button onclick={() => fileInput.click()}>导入 .txt</button>
+    <button onclick={exportTxt}>导出 .txt</button>
+    <input
+      type="file"
+      accept=".txt,text/plain"
+      hidden
+      bind:this={fileInput}
+      onchange={importTxt}
+    />
+  </div>
 </div>
 
 <style>
@@ -57,5 +84,12 @@
     margin: 0;
     font-size: 11px;
     color: var(--muted);
+  }
+  .io {
+    display: flex;
+    gap: 8px;
+  }
+  .io button {
+    flex: 1;
   }
 </style>

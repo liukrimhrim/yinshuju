@@ -19,14 +19,18 @@
 ## 仓库结构
 
 ```
-src/engine/        纯函数引擎（vitest 覆盖：夹注均分/溢出/坐标快照）
-src/app/           Svelte UI（编辑器、参数面板、预览、阅读、导出）
-scripts/           fetch-fonts / 切片管线
-public/fonts/      切片产物（构建生成）
-docs/              markup-v1 / themes-v1 / stack-v1 / 后续规格
-.scratch/charter/  wayfinder tracker（只住 main）
-proto/render-route 原型分支（throwaway，勿合并——含字体二进制）
+src/lib/engine/      纯函数引擎（parse/layout/svg/themes + vitest）
+src/lib/components/  Svelte UI 组件（编辑器、参数面板、预览）
+src/lib/state.svelte.ts  应用状态（runes）
+src/App.svelte       壳布局
+scripts/             fetch-fonts / 切片管线
+public/fonts/        切片产物（构建生成，不进 git）
+docs/                markup-v1 / themes-v1 / stack-v1 / mvp-v1
+.scratch/charter/    wayfinder tracker（只住 main）
+proto/render-route   原型分支（throwaway，勿合并——含字体二进制）
 ```
+
+（2026-07-31 实施记录：结构按 Svelte 惯例落在 `src/lib/` 下，本节已同步实际；字体切片用 fonttools 脚本实现「unicode-range woff2 自托管」，替代原定 cn-font-split——零新依赖、逐码位 range 偏冗长但走 gzip 无碍；css 内字体 URL 用相对路径，兼容任意部署 base。）
 
 ## 质量闸
 

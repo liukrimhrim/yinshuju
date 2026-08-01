@@ -49,32 +49,37 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
 
   // —— defs：版框裁剪 + 做旧滤镜（强度参数化；小字侵蚀减档 = 易读性守则） ——
   const s = o.textureStrength;
+  // seed = 页面内容哈希（djb2）：同文同貌、可复现（themes-v1 纹理规范）
+  let seed = 5381;
+  for (const ch of page.chars)
+    seed = ((seed * 33) ^ ch.ch.codePointAt(0)!) >>> 0;
+  seed = (seed % 9000) + (page.folio % 97) + 1;
   const clip = `<clipPath id="pc"><rect x="${fx0}" y="${fy0 - 8}" width="${frameW}" height="${frameH + 16}"/></clipPath>`;
   const erode = (id: string, disp: number, pitIntercept: number) => `
     <filter id="${id}" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="11" result="noise"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="${seed + 5}" result="noise"/>
       <feDisplacementMap in="SourceGraphic" in2="noise" scale="${disp.toFixed(2)}" xChannelSelector="R" yChannelSelector="G" result="disp"/>
-      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="23" result="pit"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="${seed + 7}" result="pit"/>
       <feColorMatrix in="pit" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0.9 0.9 0.9 0 ${pitIntercept.toFixed(2)}" result="pitA"/>
       <feComposite in="disp" in2="pitA" operator="out"/>
     </filter>`;
   const defs = o.texture
     ? `<defs>${clip}
       <filter id="paperGrain" x="0" y="0" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.008" numOctaves="3" seed="7" result="n1"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.008" numOctaves="3" seed="${seed}" result="n1"/>
         <feColorMatrix in="n1" type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.38  0 0 0 0 0.24  0 0 0 ${(0.83 * s).toFixed(2)} 0"/>
         <feComposite operator="over" in2="SourceGraphic"/>
       </filter>
       <filter id="fineGrain" x="0" y="0" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="2" seed="3"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="2" seed="${seed + 2}"/>
         <feColorMatrix type="matrix" values="0 0 0 0 0.30  0 0 0 0 0.24  0 0 0 0 0.15  0 0 0 ${(0.3 * s).toFixed(2)} 0"/>
       </filter>
       ${erode('inkErode', 4.33 * s, -(0.5 + 0.667 * s))}
       ${erode('inkErodeNote', 2.6 * s, -(0.35 + 0.667 * s))}
       <filter id="frameErode" x="-5%" y="-5%" width="110%" height="110%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.08 0.22" numOctaves="3" seed="5" result="noise"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.08 0.22" numOctaves="3" seed="${seed + 11}" result="noise"/>
         <feDisplacementMap in="SourceGraphic" in2="noise" scale="${(10 * s).toFixed(2)}" xChannelSelector="R" yChannelSelector="G" result="disp"/>
-        <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="31" result="pit"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="${seed + 13}" result="pit"/>
         <feColorMatrix in="pit" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.1 1.1 1.1 0 ${-(0.75 + 0.667 * s).toFixed(2)}" result="pitA"/>
         <feComposite in="disp" in2="pitA" operator="out"/>
       </filter>
@@ -91,8 +96,8 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
   }
 
   // —— 版心（折缝半列）：半鱼尾 + 半字书名卷次 + 页码 ——
-  const d = colW * 0.6;
-  const c = colW * 0.42;
+  const ftDepth = colW * 0.6; // 鱼尾总深
+  const ftNotch = colW * 0.42; // 尾尖凹口深
   const yF = fy0 + FISHTAIL_POS * frameH;
   const bxFs = Math.min(17, fs * 0.44);
   const vert = (
@@ -110,44 +115,55 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
     }
     return out;
   };
-  let banxin = `<path d="M${fx0 - colW / 2},${yF} h${colW} v${d} l${-colW / 2},${-c} l${-colW / 2},${c} z" fill="${P.frame}"/>`;
-  banxin += vert(meta.banxinTitle, fx0, yF + d + 14, bxFs, P.text);
+  let banxin = `<path d="M${fx0 - colW / 2},${yF} h${colW} v${ftDepth} l${-colW / 2},${-ftNotch} l${-colW / 2},${ftNotch} z" fill="${P.frame}"/>`;
+  banxin += vert(meta.banxinTitle, fx0, yF + ftDepth + 14, bxFs, P.text);
   banxin += vert(
     meta.banxinJuan,
     fx0,
-    yF + d + 14 + 3.2 * (bxFs + 5),
+    yF + ftDepth + 14 + 3.2 * (bxFs + 5),
     bxFs,
     P.text,
   );
   banxin += vert(toCnNum(page.folio), fx0, fy0 + frameH * 0.78, bxFs, P.text);
   frame += `<g clip-path="url(#pc)">${banxin}</g>`;
 
-  // —— 文字与圈点 ——
-  const charFs = (ch: PlacedChar) =>
-    ch.kind === 'note' ? noteFs : ch.role === 'author' ? fs * 0.85 : fs;
-  const charX = (ch: PlacedChar) =>
+  // —— 文字与圈点：kind 分派收拢为一次度量 ——
+  const metrics = (ch: PlacedChar) =>
     ch.kind === 'note'
-      ? colX(ch.col) + colW * (ch.sub === 'L' ? 0.26 : 0.74)
-      : colX(ch.col) + colW / 2;
-  const charY = (ch: PlacedChar) =>
-    ch.kind === 'note'
-      ? fy0 + ch.half * (cellH / 2) + cellH / 4
-      : fy0 + (ch.half / 2) * cellH + cellH / 2;
+      ? {
+          size: noteFs,
+          fill: P.note,
+          x: colX(ch.col) + colW * (ch.sub === 'L' ? 0.26 : 0.74),
+          y: fy0 + ch.half * (cellH / 2) + cellH / 4,
+          markX:
+            colX(ch.col) +
+            colW * (ch.sub === 'L' ? 0.26 : 0.74) +
+            noteFs * 0.62,
+          markR: fs * 0.055,
+        }
+      : {
+          size: ch.role === 'author' ? fs * 0.85 : fs,
+          fill: P.text,
+          x: colX(ch.col) + colW / 2,
+          y: fy0 + (ch.half / 2) * cellH + cellH / 2,
+          markX: colX(ch.col) + colW - 5,
+          markR: fs * 0.088,
+        };
 
-  let text = '';
+  let bigText = '';
+  let noteText = '';
   let marks = '';
   for (const ch of page.chars) {
-    const fill = ch.kind === 'note' ? P.note : P.text;
-    text += `<text x="${charX(ch)}" y="${charY(ch)}" font-size="${charFs(ch).toFixed(1)}" fill="${fill}" ${CT}>${esc(ch.ch)}</text>`;
+    const m = metrics(ch);
+    const glyph = `<text x="${m.x}" y="${m.y}" font-size="${m.size.toFixed(1)}" fill="${m.fill}" ${CT}>${esc(ch.ch)}</text>`;
+    if (ch.kind === 'note') noteText += glyph;
+    else bigText += glyph;
     if (ch.punct && o.showPunct) {
-      const big = ch.kind === 'big';
-      const mx = big ? colX(ch.col) + colW - 5 : charX(ch) + noteFs * 0.62;
-      const my = charY(ch) + charFs(ch) * 0.4;
-      const r = big ? fs * 0.088 : fs * 0.055;
+      const my = m.y + m.size * 0.4;
       marks +=
         ch.punct === 'ju'
-          ? `<circle cx="${mx}" cy="${my}" r="${r.toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="1.5"/>`
-          : `<circle cx="${mx}" cy="${my}" r="${(r * 0.6).toFixed(1)}" fill="${P.mark}"/>`;
+          ? `<circle cx="${m.markX}" cy="${my}" r="${m.markR.toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="1.5"/>`
+          : `<circle cx="${m.markX}" cy="${my}" r="${(m.markR * 0.6).toFixed(1)}" fill="${P.mark}"/>`;
     }
   }
 
@@ -156,9 +172,9 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
       `<rect width="${PAGE_W}" height="${PAGE_H}" filter="url(#paperGrain)" fill="none"/>` +
       `<rect width="${PAGE_W}" height="${PAGE_H}" filter="url(#fineGrain)"/>` +
       `<g filter="url(#frameErode)">${frame}</g>` +
-      `<g filter="url(#inkErode)">${text}</g>` +
-      `<g filter="url(#inkErodeNote)">${marks}</g>`
-    : `<rect width="${PAGE_W}" height="${PAGE_H}" fill="${P.paper}"/>${frame}${text}${marks}`;
+      `<g filter="url(#inkErode)">${bigText}</g>` +
+      `<g filter="url(#inkErodeNote)">${noteText}${marks}</g>`
+    : `<rect width="${PAGE_W}" height="${PAGE_H}" fill="${P.paper}"/>${frame}${bigText}${noteText}${marks}`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PAGE_W} ${PAGE_H}" font-family="${o.fontFamily}">${defs}${body}</svg>`;
 }

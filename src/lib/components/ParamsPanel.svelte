@@ -15,6 +15,7 @@
     ['mark', '圈点'],
     ['frame', '版框'],
     ['line', '界行'],
+    ['seal', '印'],
   ];
 
   let presetIdx = $derived(
@@ -24,10 +25,11 @@
   );
   // 版式规范票：常用域半叶 8–15 行 × 行 16–22 字
   let outOfCanon = $derived(
-    app.cols < 8 ||
-      app.cols > 15 ||
-      app.charsPerCol < 16 ||
-      app.charsPerCol > 22,
+    presetIdx === -1 &&
+      (app.cols < 8 ||
+        app.cols > 15 ||
+        app.charsPerCol < 16 ||
+        app.charsPerCol > 22),
   );
 
   function pickPreset(e: Event) {
@@ -115,11 +117,15 @@
 
   {#if app.theme.texture}
     <section>
-      <label for="p-tex">做旧强度 {app.textureStrength.toFixed(2)}</label>
+      <label for="p-tex"
+        >做旧强度 {app.textureStrength === 0
+          ? '关'
+          : app.textureStrength.toFixed(2)}</label
+      >
       <input
         id="p-tex"
         type="range"
-        min="0.1"
+        min="0"
         max="1"
         step="0.05"
         bind:value={app.textureStrength}

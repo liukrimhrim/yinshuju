@@ -29,7 +29,7 @@
 - **A 核心闭环**：引擎移植 TS（parse/layout/svg/themes + vitest）→ Svelte 编辑器 + 参数面板 + 预览。
 - **B 导出全家桶**：多比例重排、PNG/JPEG、PDF 多页书签；**Safari 实测**（SVG-as-image 字体 → 必要时 text→path 兜底）。
 - **C 印章**：硬前置=说文篆体授权两说复核 → 生成器 + 缺字 UX。
-- **D 收尾发布**：阅读模式、简繁、上传字体、Actions 部署上线。
+- **D 收尾发布**：阅读模式、简繁、上传字体、Actions 部署上线；**并入 A 的显式后置项**：TW-Kai 兜底字体入切片管线 + fetch 校验和、篇题自动入版心开关（themes-v1 可选项）。
 
 A/B 不被 C 的授权复核阻塞。
 

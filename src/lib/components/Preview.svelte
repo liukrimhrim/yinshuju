@@ -1,14 +1,19 @@
 <script lang="ts">
   import { app } from '../state.svelte';
+
+  let spread = $state(false);
 </script>
 
 <div class="preview">
-  <div class="page">
-    <!-- eslint-disable-next-line svelte/no-at-html-tags — svg 由引擎生成，文本已转义 -->
-    {@html app.svg}
+  <div class="page" class:spread>
+    {#if spread && app.svgNext}
+      <!-- 对开：左=次叶（页序右起，先读右） -->
+      <div class="half">{@html app.svgNext}</div>
+    {/if}
+    <div class="half">{@html app.svg}</div>
   </div>
-  {#if app.pages.length > 1}
-    <div class="nav">
+  <div class="nav">
+    {#if app.pages.length > 1}
       <button
         disabled={app.curIdx === 0}
         onclick={() => (app.pageIdx = app.curIdx - 1)}
@@ -22,8 +27,9 @@
       >
         后叶 ›
       </button>
-    </div>
-  {/if}
+    {/if}
+    <button class:on={spread} onclick={() => (spread = !spread)}>对开</button>
+  </div>
 </div>
 
 <style>
@@ -34,9 +40,15 @@
     padding: 20px;
     gap: 12px;
   }
+  .page {
+    display: flex;
+  }
   .page :global(svg) {
-    height: min(88vh, 1050px);
+    height: min(86vh, 1050px);
     box-shadow: 0 3px 18px rgba(40, 30, 10, 0.28);
+  }
+  .page.spread :global(svg) {
+    height: min(80vh, 900px);
   }
   .nav {
     display: flex;
@@ -49,6 +61,9 @@
     .page :global(svg) {
       height: auto;
       width: min(92vw, 480px);
+    }
+    .page.spread :global(svg) {
+      width: min(48vw, 300px);
     }
   }
 </style>

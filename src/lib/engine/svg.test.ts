@@ -64,6 +64,28 @@ describe('SVG 渲染', () => {
     expect(sizes).toContain(Number((max / 2).toFixed(1)));
   });
 
+  it('纹理 seed 取内容哈希：同文同貌、异文异貌', () => {
+    const a1 = renderPage(page, meta, opts('zuojiu'));
+    const a2 = renderPage(page, meta, opts('zuojiu'));
+    expect(a1).toBe(a2);
+    const other = layout(parse('另一段文字'), meta, grid)[0]!;
+    const b = renderPage(other, meta, opts('zuojiu'));
+    const seedOf = (s: string) => /seed="(\d+)" result="n1"/.exec(s)?.[1];
+    expect(seedOf(a1)).toBeDefined();
+    expect(seedOf(a1)).not.toBe(seedOf(b));
+  });
+
+  it('做旧时夹注小字走减档滤镜组（易读性守则）', () => {
+    const svg = renderPage(page, meta, opts('zuojiu'));
+    const noteGroup =
+      /<g filter="url\(#inkErodeNote\)">([\s\S]*?)<\/g>/.exec(svg)?.[1] ?? '';
+    expect(noteGroup).toContain('>考<'); // 夹注字在减档组里
+    const bigGroup =
+      /<g filter="url\(#inkErode\)">([\s\S]*?)<\/g>/.exec(svg)?.[1] ?? '';
+    expect(bigGroup).not.toContain('>考<');
+    expect(bigGroup).toContain('>粤<');
+  });
+
   it('toCnNum：一位/十位/两位', () => {
     expect(toCnNum(1)).toBe('一');
     expect(toCnNum(10)).toBe('十');
