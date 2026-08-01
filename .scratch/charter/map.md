@@ -35,6 +35,7 @@ Label: wayfinder:map
 - [古籍版式规范与术语](issues/01-banshi-guifan.md) — 930+440 部实物统计打底：全比例参数化（框宽高比 0.7、天头:地脚 1.2–1.5:1、半叶 8–15 行×16–22 字）；双行夹注=半字号/右行先/注毕回单行（移植 JLREQ 割注规则）；句读不占字位；研究文档含引擎参数 schema 与 5 预设皮肤。
 - [开源古籍字体与授权](issues/02-guji-fonts.md) — 正文汇文明朝体（CC0 修正版）+ 夹注全字库正楷 TW-Kai（OFL）+ 标题京华老宋体（整包，禁改条款与子集冲突）+ 兜底 Noto Serif TC；样张同款 Kai Oldstyle 与康熙字典体均排除（商业/授权不明）；子集化主方案 = cn-font-split 切片自托管。
 - [渲染路线样张验证](issues/08-render-prototype.md) — 路线定案：自研布局引擎+SVG per-char，三出口共用坐标；夹注/圈点/半列版心/主题/纸墨纹理滤镜全部验证并活过导出；原型在 proto/render-route 分支；采下需求：颜色/字体可定制、纹理逼真（转 09/11）。
+- [视觉主题定案](issues/09-visual-themes.md) — 首发四主题（默认朱丝栏）；字体按主题配默认（做旧=汇文、余=朱雀）；颜色七参数全开；做旧=纯 SVG 滤镜+强度滑杆+小字减档；规范落在 docs/themes-v1.md。
 - [输入标记语法](issues/07-markup-syntax.md) — 零标记粘贴即可用：元数据走 UI 表单；圆括号=夹注；现代标点映射句读（可关）；空行=提行、#=篇题，仅此而已；规范+样例落在 docs/markup-v1.md，域模型种子 domain.md。
 
 ## Not yet specified
