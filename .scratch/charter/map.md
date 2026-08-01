@@ -37,6 +37,7 @@ Label: wayfinder:map
 - [渲染路线样张验证](issues/08-render-prototype.md) — 路线定案：自研布局引擎+SVG per-char，三出口共用坐标；夹注/圈点/半列版心/主题/纸墨纹理滤镜全部验证并活过导出；原型在 proto/render-route 分支；采下需求：颜色/字体可定制、纹理逼真（转 09/11）。
 - [视觉主题定案](issues/09-visual-themes.md) — 首发四主题（默认朱丝栏）；字体按主题配默认（做旧=汇文、余=朱雀）；颜色七参数全开；做旧=纯 SVG 滤镜+强度滑杆+小字减档；规范落在 docs/themes-v1.md。
 - [技术栈与部署](issues/10-stack-deploy.md) — Svelte 5 + Vite + TS（引擎纯函数零框架）；GitHub Pages + Actions 自动部署；依赖全懒加载；字体切片自托管、导出内嵌切片；规范落在 docs/stack-v1.md。
+- [MVP 切分与首发规格](issues/11-mvp-scope.md) — M1 三出口全量；多比例=自适应重排；印章缺字=提示+可选退楷；字体=内置三款+上传；建造顺序 A 核心→B 导出→C 印章→D 发布；规格落在 docs/mvp-v1.md。**地图收官（2026-07-31）：11 票全关，动工路径已清。**
 - [输入标记语法](issues/07-markup-syntax.md) — 零标记粘贴即可用：元数据走 UI 表单；圆括号=夹注；现代标点映射句读（可关）；空行=提行、#=篇题，仅此而已；规范+样例落在 docs/markup-v1.md，域模型种子 domain.md。
 
 ## Not yet specified
