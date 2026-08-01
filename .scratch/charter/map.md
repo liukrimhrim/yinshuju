@@ -28,7 +28,7 @@ Label: wayfinder:map
 
 <!-- 每张已关闭票据一行：标题链接 + 一句话结论 -->
 
-（尚无）
+- [先行项目与可借力库](issues/04-prior-art.md) — 竖排渲染不必造轮子；可借力 vRain（版式参数对标）、heti、tategaki、nehan（分页）、luatex-cn（注文模型）；「web 即时预览×刻本保真×三出口」无人占据；最大风险是打印 PDF 竖排分页。
 
 ## Not yet specified
 

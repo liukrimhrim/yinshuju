@@ -1,0 +1,122 @@
+# 04 · 先行者调研：古籍排版与中文竖排渲染
+
+调研日期：2026-07-31。方法：WebSearch + GitHub 仓库逐一核实（活跃度/许可证以当日页面为准）。
+判定标签：**可直接复用** / **只可参考** / **无关**。
+
+---
+
+## 一、GitHub 古籍排版项目
+
+### 1. vRain — 中文古籍刻本风格直排电子书制作工具 ★本票最大发现
+- 链接：https://github.com/shanleiguang/vRain
+- 活跃度：1.6k stars / 185 forks，v1.5 发布于 2025-05，活跃维护中（曾被 GitHubDaily 推荐）
+- 许可证：MIT
+- 内容：Perl 5 命令行工具（依赖 Image::Magick、PDF::Builder、FreeType），文本 → 古籍刻本风格竖排 PDF。版式能力齐全：界栏（框线粗细/颜色/边距）、鱼尾（单双/顺对/黑白/装饰）、小字双排夹批、多种刻本背景图（含竹简风）、引号书名号自动旋转、Ghostscript 压缩。
+- 判定：**只可参考（但参考价值极高）**。Perl 命令行栈无法进 web，但它的**版式参数体系就是我们的需求规格书**——配置项清单（界栏/鱼尾/夹批/背景/字体回退）可直接翻译成我们的设置面板；其成品 PDF 是保真度对标基准。
+
+### 2. luatex-cn — 基于 LuaTeX 的古籍竖排引擎
+- 链接：https://github.com/open-guji/luatex-cn
+- 活跃度：78 stars，已发布 CTAN v0.3.8，有完整 Wiki 与四库全书/红楼梦模板，生产可用
+- 许可证：Apache 2.0
+- 内容：网格化竖排文本流、自动分列分页、版心装饰（鱼尾/乌丝栏/四周双边）、夹注/侧批/眉批自动平衡、句读/印章/标点挤压。
+- 判定：**只可参考**。TeX 栈不进浏览器，但其「注文系统三层（夹/侧/眉）」与网格模型是版式术语和数据模型的权威参照。这就是"龙泉寺 TeX 方案"传承的开源形态（龙泉寺贤超团队本身：搜遍公开报道只见 OCR/自动标点/文白翻译开源了 gj.cool 标点 API，**排版部分无公开代码**，线索到此为止）。
+
+### 3. judou — 类古籍排版 Vue 组件
+- 链接：https://github.com/vimerio-mu/judou
+- 活跃度：9 stars / 6 commits，早期玩具阶段
+- 许可证：MIT
+- 内容：Vue 3 + Vite 组件，竖排古籍风、句读转换、数字转汉字。
+- 判定：**只可参考**。证明"web 组件做古籍排版"路线可行，但太浅，不必依赖。
+
+### 4. 其他零星
+- Fusyong/vertical-typesetting（ConTeXt 竖排模块）、wujimacha/縱書卷軸模板：TeX/模板类，**无关**（方向重复且不如 luatex-cn）。
+- kawabata/kanbun-javascript（漢文训读 JS）：**只可参考**，若未来做训读标注可回头看。
+
+---
+
+## 二、npm / JS 库（web 竖排的技术地基）
+
+### 5. CSS 原生 `writing-mode: vertical-rl` — 最大的"不必造的轮子"
+- 链接：https://caniuse.com/mdn-css_properties_writing-mode_vertical-rl 、W3C 指南 https://w3c.github.io/i18n-drafts/articles/vertical-text/index.en
+- 2017 年起全浏览器绿灯。竖排文字流、标点自动直立/旋转（`text-orientation`）浏览器全包。
+- 判定：**可直接复用（首选地基）**。配套权威规范：W3C 中文排版需求 clreq（https://www.w3.org/TR/clreq/）。
+- 已知坑：竖排 + 浏览器打印分页有历史 bug（Firefox bugzilla 1166147 只打一页）；打印 PDF 路线需早做 spike，必要时服务端渲染兜底。
+
+### 6. heti（赫蹏）— 中文排版样式增强
+- 链接：https://github.com/sivan/heti
+- 活跃度：6.7k stars，148 commits，活跃
+- 许可证：仓库带 LICENSE（MIT 系，用前确认一眼）
+- 内容：贴合网格、全角标点挤压、预置古文/诗词样式、暗色自适应、简繁支持。
+- 判定：**可直接复用**。标点挤压与中西混排这类脏活直接借它的 CSS/JS，不自己写。
+
+### 7. tategaki（Denkiame/Tategaki）— 竖排 HTML 转换 npm 包
+- 链接：https://github.com/Denkiame/Tategaki 、npm `tategaki`
+- 活跃度：v1.4.4，**一个月前刚发版**，活着
+- 内容：把元素切分为 cjk/latin 等 span、自动标点挤压（PcS）、附带 tategaki.css。
+- 判定：**可直接复用或抄实现**。日文竖排精排的现成 JS，处理拉丁夹排/标点旋转细节。
+
+### 8. nehan（+ responsivook）— TS 分页布局引擎
+- 链接：https://github.com/tategakibunko/nehan 、npm `nehan`
+- 活跃度：53 stars，1481 commits，有插件生态（KaTeX/anchor）与 Chrome 扩展 Nehan Reader；维护趋缓
+- 许可证：MIT
+- 内容：paged-media 逻辑布局引擎，原生支持 vertical-rl 分页——正是"翻页阅读"最难的那块。
+- 判定：**可直接复用（候选）**。若 CSS 原生 + 自算分页不够用，这是唯一现成的竖排分页引擎；responsivook 一行把元素变翻页书。
+
+### 9. Bibi — web EPUB 阅读器（竖排完备）
+- 链接：https://github.com/satorumurmur/bibi
+- 许可证：MIT。EPUB3，明确支持縦書き。
+- 判定：**只可参考**。输入格式是 EPUB 不是我们的粘贴文本，但其翻页交互/双页书脊呈现值得抄交互。
+
+### 10. 老一代：Han.css、竹取JS、h2vR.js
+- Han.css https://github.com/ethantw/Han ：2.5k stars，MIT，**2016 年后停更**，横排为主。判定：**只可参考**（术语与字体栈思路）。
+- 竹取JS https://taketori.org/js.html ：MIT，2015 年后停更。判定：**无关**（被原生 writing-mode 淘汰）。
+- 结论：老库解决的"浏览器不支持竖排"问题已消失，别背历史包袱。
+
+---
+
+## 三、在线玩具 / 同类品（差异化对标）
+
+### 11. 在线竖排生成器一族（"udpn 类小玩具"现状）
+- 代表：https://shupai.github.net.cn/ 、https://www.dute.org/vertical-text 、https://uutool.cn/txt-col/ 、https://rtool.cn/text-vertical-layout.html
+- 共同水平：设行数/每行字数/简单边框/繁简转换，输出纯文本或简陋图片。
+- 共同缺失：**无鱼尾、无版心/书口、无夹注、无线装封面、无高清壁纸导出、无翻页阅读、无打印 PDF**。字符画级别，不是版式复刻。
+- 判定：**无关（仅作差异化反面教材）**。
+
+### 12. 微信小程序"奏折/圣旨生成器"
+- 多轮搜索未命中有影响力的成品，只有艺术字/字帖/诗词生成周边。该品类在中文互联网**基本空白或已死**。
+- 判定：**无关**；侧面证明需求端无人认真做。
+
+### 13. 日文青空文庫竖排阅读生态（技术同构的成熟世界）
+- えあ草紙 https://www.satokazzz.com/books/ 、tategaki.info、TxtMiru 等：网页直接翻页读竖排小说，体验成熟。
+- 判定：**只可参考（交互层重点抄）**。证明"浏览器里舒服地竖排翻页读长文"完全可行；但全是日文小说皮，无中式古籍版式（无界栏/鱼尾/双页版心），皮肤层正是我们的空间。
+
+---
+
+## 四、数字古籍平台的呈现方式
+
+### 14. 识典古籍（北大 × 字节）
+- 链接：https://www.shidianguji.com/ （参见 https://pkudh.org/project/shidianguji/ ）
+- 近 6 万部古籍，OCR 96-97%，自动标点/实体识别，影印图文对照、繁简转换、自定义版式。
+- 判定：**只可参考**。重心是"整理与检索"，正文以现代横排为主 + 影印扫描图对照——**不做数字原生的版式复刻**。
+
+### 15. ctext.org（中国哲学书电子化计划）与中华经典古籍库
+- 链接：https://ctext.org/zhs
+- 横排文本 + 链接扫描影印页，二十年老路线；中华经典古籍库（商业库）同为检索型。
+- 判定：**只可参考**。共同启示：全行业把"竖排原貌"外包给扫描图，**没有一家做"文字层的高保真竖排渲染"**。
+
+---
+
+## 五、结论
+
+**站在谁的肩膀上**
+1. **CSS 原生 writing-mode**：竖排文字流零成本，2017 年后无兼容问题——渲染引擎不必造。
+2. **vRain（MIT）**：版式参数体系（界栏/鱼尾/夹批/背景/字号层级）直接当需求规格书和保真度对标，省掉版式设计的考古工作。
+3. **heti（活跃）+ tategaki（npm，上月刚发版）**：标点挤压、中西混排、竖排标点旋转的现成实现。
+4. **nehan / Bibi / 青空文庫生态**：竖排分页与翻页交互有完整先例，"翻页阅读"模式抄交互即可。
+5. **luatex-cn 的注文三层模型 + W3C clreq**：数据模型与术语的权威参照。
+
+**不必造的轮子**：竖排文字流、标点直立/旋转、标点挤压、分页引擎思路、版式术语体系。
+
+**必须自己做的**：把 vRain 级版式（界栏/鱼尾/版心/夹注/线装封面）搬进浏览器实时渲染；壁纸（高清图）导出；打印 PDF 的竖排分页（有浏览器坑，尽早 spike）。
+
+**差异化空缺（核实成立）**：现存格局是三条互不相交的线——vRain 保真但是 Perl 命令行、在线生成器即时但是字符画、日文 viewer 交互好但无中式版式、古籍平台干脆用扫描图。**「浏览器即时预览 × 刻本级版式保真 × 壁纸/翻页/打印 PDF 三出口」这个组合当前无人占据**，且所需地基（原生竖排 + MIT 参照实现）全部就绪。风险最大点不是渲染而是"打印 PDF 竖排分页"，立项后第一周应做技术 spike。
