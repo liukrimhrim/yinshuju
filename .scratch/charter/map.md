@@ -32,6 +32,7 @@ Label: wayfinder:map
 - [竖排渲染与导出技术路线](issues/03-vertical-rendering.md) — 推荐自研布局引擎（网格→逐字坐标表）+ SVG per-char 渲染，三出口共用坐标数据；PNG=SVG→canvas，PDF=pdf-lib 嵌页；html2canvas/satori/@page 均以 issue 实证排除；双行夹注 CSS 无解、自排三行代码是决定性论据。
 - [简繁转换与自动句读](issues/05-text-pipeline.md) — opencc-js + s2t 变体（s2tw/s2twp 对古文有害）；句读无免费 API，降级链=手动圈点 UI 默认→用户自带 LLM key→本地模型远期；管线顺序：先句读→s2t→旧字形。
 - [印章生成方案](issues/06-seal-generation.md) — 篆书用全字库说文解字字型（政府开放授权，可改作子集化）；SVG 自研（opentype.js 转 path，feTurbulence 做旧，seed=印文哈希）；缺字整印退楷不混排。
+- [古籍版式规范与术语](issues/01-banshi-guifan.md) — 930+440 部实物统计打底：全比例参数化（框宽高比 0.7、天头:地脚 1.2–1.5:1、半叶 8–15 行×16–22 字）；双行夹注=半字号/右行先/注毕回单行（移植 JLREQ 割注规则）；句读不占字位；研究文档含引擎参数 schema 与 5 预设皮肤。
 
 ## Not yet specified
 
