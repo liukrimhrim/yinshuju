@@ -37,6 +37,7 @@ export interface PlacedChar {
 export interface Page {
   chars: PlacedChar[];
   folio: number; // 页码，从 1 起
+  chapters: string[]; // 本页起始的篇题（PDF 书签数据源）
 }
 
 export interface GridParams {

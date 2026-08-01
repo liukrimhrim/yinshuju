@@ -117,6 +117,15 @@ describe('布局引擎', () => {
     expect(bodyInSameCol).toHaveLength(0);
   });
 
+  it('每页记录起始篇题（PDF 书签数据源）', () => {
+    const src = '# 上篇\n\n' + '字'.repeat(8 * 18) + '\n\n# 下篇\n\n后文';
+    const pages = layout(parse(src), meta, grid);
+    expect(pages[0]!.chapters).toEqual(['上篇']);
+    const p2 = pages.find((p) => p.chapters.includes('下篇'))!;
+    expect(p2.folio).toBeGreaterThan(1);
+    expect(pages.flatMap((p) => p.chapters)).toEqual(['上篇', '下篇']);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

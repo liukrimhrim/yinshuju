@@ -6,11 +6,11 @@
 
 <div class="preview">
   <div class="page" class:spread>
-    {#if spread && app.svgNext}
-      <!-- 对开：左=次叶（页序右起，先读右） -->
-      <div class="half">{@html app.svgNext}</div>
+    {#if spread}
+      {@html app.svgSpread}
+    {:else}
+      {@html app.svg}
     {/if}
-    <div class="half">{@html app.svg}</div>
   </div>
   <div class="nav">
     {#if app.pages.length > 1}
@@ -48,7 +48,7 @@
     box-shadow: 0 3px 18px rgba(40, 30, 10, 0.28);
   }
   .page.spread :global(svg) {
-    height: min(80vh, 900px);
+    height: min(78vh, 880px);
   }
   .nav {
     display: flex;
@@ -63,7 +63,7 @@
       width: min(92vw, 480px);
     }
     .page.spread :global(svg) {
-      width: min(48vw, 300px);
+      width: 92vw;
     }
   }
 </style>

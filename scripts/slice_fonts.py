@@ -14,10 +14,12 @@ FONTS = [
 ]
 
 css_parts: list[str] = []
+manifest: dict = {}
 for fid, family, src in FONTS:
     (OUT / fid).mkdir(parents=True, exist_ok=True)
     cps = sorted(TTFont(str(src)).getBestCmap().keys())
     chunks = [cps[i : i + CHUNK] for i in range(0, len(cps), CHUNK)]
+    manifest[fid] = {'family': family, 'slices': []}
     print(f'{fid}: {len(cps)} codepoints -> {len(chunks)} chunks')
     for n, chunk in enumerate(chunks):
         out = OUT / fid / f'{n}.woff2'
@@ -34,4 +36,6 @@ for fid, family, src in FONTS:
         )
 total = sum(f.stat().st_size for fid, _, _ in FONTS for f in (OUT / fid).glob('*.woff2'))
 (OUT / 'fonts.css').write_text('\n'.join(css_parts))
+import json
+(OUT / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False))
 print(f'total woff2: {total/1e6:.1f}MB, css: {(OUT/"fonts.css").stat().st_size/1e3:.0f}KB')

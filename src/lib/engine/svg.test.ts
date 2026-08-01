@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from './parse';
 import { layout } from './layout';
-import { renderPage, toCnNum } from './svg';
+import { renderPage, renderSpread, toCnNum } from './svg';
 import { THEMES } from './themes';
 import type { Meta } from './types';
 
@@ -84,6 +84,29 @@ describe('SVG 渲染', () => {
       /<g filter="url\(#inkErode\)">([\s\S]*?)<\/g>/.exec(svg)?.[1] ?? '';
     expect(bigGroup).not.toContain('>考<');
     expect(bigGroup).toContain('>粤<');
+  });
+
+  it('对开整叶：四边闭合、全鱼尾版心居中、容两页文字', () => {
+    const pages = layout(parse('字'.repeat(8 * 18 + 5)), meta, grid);
+    const svg = renderSpread(pages[0]!, pages[1]!, meta, {
+      ...opts('zhusilan'),
+      pageW: 1120,
+      pageH: 1120,
+    });
+    expect(svg).toContain('viewBox="0 0 1120 1120"');
+    expect(svg).toContain('<rect'); // 闭合版框
+    expect(svg).not.toContain('clip-path="url(#pc)"'); // 全鱼尾不裁剪
+    expect(svg).toContain('>鬼<'); // 右半叶书名列
+    expect(svg).toContain('>字<'); // 正文
+  });
+
+  it('自定义页面尺寸进 viewBox', () => {
+    const svg = renderPage(page, meta, {
+      ...opts('zhusilan'),
+      pageW: 517,
+      pageH: 1120,
+    });
+    expect(svg).toContain('viewBox="0 0 517 1120"');
   });
 
   it('toCnNum：一位/十位/两位', () => {

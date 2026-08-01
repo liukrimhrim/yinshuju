@@ -1,6 +1,6 @@
 import { parse } from './engine/parse';
 import { layout } from './engine/layout';
-import { renderPage } from './engine/svg';
+import { renderPage, renderSpread } from './engine/svg';
 import {
   THEMES,
   DEFAULT_THEME_ID,
@@ -48,11 +48,14 @@ class AppState {
   svg = $derived(
     renderPage(this.pages[this.curIdx]!, this.meta, this.renderOpts),
   );
-  // 对开视图的次叶（页序右起：当前叶在右、次叶在左）
-  svgNext = $derived(
-    this.pages[this.curIdx + 1]
-      ? renderPage(this.pages[this.curIdx + 1]!, this.meta, this.renderOpts)
-      : null,
+  // 对开预览：整叶 32:28（右=当前叶，左=次叶，中央整列版心）
+  svgSpread = $derived(
+    renderSpread(
+      this.pages[this.curIdx]!,
+      this.pages[this.curIdx + 1] ?? null,
+      this.meta,
+      { ...this.renderOpts, pageW: 1280, pageH: 1120 },
+    ),
   );
 
   // 持久化标量清单——restore 与 persist 共用，新增字段只改这一处
@@ -91,6 +94,17 @@ class AppState {
     this.themeId = id;
     this.palette = { ...t.palette };
     this.fontId = t.defaultFont;
+  }
+
+  get exportCtx() {
+    const { grid: _g, ...render } = this.renderOpts;
+    return {
+      text: this.text,
+      meta: this.meta,
+      grid: { cols: this.cols, charsPerCol: this.charsPerCol },
+      render,
+      fontId: this.fontId,
+    };
   }
 
   persist() {

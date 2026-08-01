@@ -3,8 +3,9 @@
   import Editor from './lib/components/Editor.svelte';
   import ParamsPanel from './lib/components/ParamsPanel.svelte';
   import Preview from './lib/components/Preview.svelte';
+  import ExportPanel from './lib/components/ExportPanel.svelte';
 
-  let tab = $state<'text' | 'params'>('text');
+  let tab = $state<'text' | 'params' | 'export'>('text');
   $effect(() => app.persist());
 </script>
 
@@ -21,11 +22,16 @@
       <button class:on={tab === 'params'} onclick={() => (tab = 'params')}
         >版式</button
       >
+      <button class:on={tab === 'export'} onclick={() => (tab = 'export')}
+        >导出</button
+      >
     </nav>
     {#if tab === 'text'}
       <Editor />
-    {:else}
+    {:else if tab === 'params'}
       <ParamsPanel />
+    {:else}
+      <ExportPanel />
     {/if}
   </aside>
   <main>

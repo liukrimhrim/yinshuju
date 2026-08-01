@@ -6,13 +6,15 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
   const HMAX = grid.charsPerCol * 2;
   const pages: Page[] = [];
   let cur: PlacedChar[] = [];
+  let curChapters: string[] = [];
   let col = 0;
   let half = 0;
   let lastBig: PlacedChar | null = null;
 
   const flushPage = () => {
-    pages.push({ chars: cur, folio: pages.length + 1 });
+    pages.push({ chars: cur, folio: pages.length + 1, chapters: curChapters });
     cur = [];
+    curChapters = [];
     col = 0;
     half = 0;
   };
@@ -49,6 +51,7 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
   for (const b of blocks) {
     freshCol();
     if (b.type === 'chapter') {
+      curChapters.push(b.text);
       placeVert(b.text, col, 4, 'chapter'); // 低二格
       advanceCol();
       continue;
