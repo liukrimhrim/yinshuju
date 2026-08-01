@@ -7,6 +7,9 @@
 
   let tab = $state<'text' | 'params' | 'export'>('text');
   $effect(() => app.persist());
+  $effect(() => {
+    if (app.seals.length) app.ensureSealFont();
+  });
 </script>
 
 <div class="shell">

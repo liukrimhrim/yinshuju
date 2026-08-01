@@ -1,6 +1,25 @@
 <script lang="ts">
   import { app } from '../state.svelte';
   import { THEMES, FONTS } from '../engine/themes';
+  import { SEAL_SLOTS, type SealSpec } from '../seal';
+
+  function addSeal() {
+    app.seals = [
+      ...app.seals,
+      {
+        text: '',
+        style: 'zhu',
+        shape: 'square',
+        slot: 'tiantou',
+        kaiFallback: false,
+      },
+    ];
+  }
+  function removeSeal(i: number) {
+    app.seals = app.seals.filter((_, x) => x !== i);
+  }
+  const missingOf = (i: number) =>
+    app.sealMissing.find((m) => m.index === i)?.chars.join(' ') ?? '';
 
   const PRESETS = [
     { label: '黄善夫本 · 十行十八字', cols: 10, chars: 18 },
@@ -139,6 +158,51 @@
       显示句读圈点
     </label>
   </section>
+
+  <section>
+    <label for="p-seals">印章（崇羲篆体 · 贴卷首叶）</label>
+    <div id="p-seals" class="seals">
+      {#each app.seals as seal, i (i)}
+        <div class="seal">
+          <div class="row">
+            <input placeholder="印文（2–9 字）" bind:value={seal.text} />
+            <button class="del" onclick={() => removeSeal(i)} aria-label="删除"
+              >×</button
+            >
+          </div>
+          <div class="row">
+            <select bind:value={seal.style}>
+              <option value="zhu">朱文（红字）</option>
+              <option value="bai">白文（红底）</option>
+            </select>
+            <select bind:value={seal.shape}>
+              <option value="square">方印</option>
+              <option value="circle">圆印</option>
+              <option value="ellipse">椭圆</option>
+            </select>
+            <select bind:value={seal.slot}>
+              {#each SEAL_SLOTS as s (s.id)}
+                <option value={s.id}>{s.label}</option>
+              {/each}
+            </select>
+          </div>
+          {#if missingOf(i)}
+            <p class="warn">
+              篆书缺字：{missingOf(i)}
+              <label class="check inline">
+                <input type="checkbox" bind:checked={seal.kaiFallback} />
+                整印退用正文字体
+              </label>
+            </p>
+          {/if}
+        </div>
+      {/each}
+    </div>
+    <button onclick={addSeal}>＋ 添加印章</button>
+    {#if !app.sealFont && app.seals.length}
+      <p class="hint">篆书字体加载中…（21.8MB，仅首次）</p>
+    {/if}
+  </section>
 </div>
 
 <style>
@@ -188,5 +252,35 @@
   }
   .check input {
     width: auto;
+  }
+  .seals {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .seal {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .seal .row {
+    margin-top: 0;
+  }
+  .del {
+    flex: 0 0 34px;
+    padding: 6px 0;
+  }
+  .check.inline {
+    display: inline-flex;
+    margin-left: 8px;
+  }
+  .hint {
+    margin: 6px 0 0;
+    font-size: 11px;
+    color: var(--muted);
   }
 </style>

@@ -31,7 +31,7 @@ Label: wayfinder:map
 - [先行项目与可借力库](issues/04-prior-art.md) — 竖排渲染不必造轮子；可借力 vRain（版式参数对标）、heti、tategaki、nehan（分页）、luatex-cn（注文模型）；「web 即时预览×刻本保真×三出口」无人占据；最大风险是打印 PDF 竖排分页。
 - [竖排渲染与导出技术路线](issues/03-vertical-rendering.md) — 推荐自研布局引擎（网格→逐字坐标表）+ SVG per-char 渲染，三出口共用坐标数据；PNG=SVG→canvas，PDF=pdf-lib 嵌页；html2canvas/satori/@page 均以 issue 实证排除；双行夹注 CSS 无解、自排三行代码是决定性论据。
 - [简繁转换与自动句读](issues/05-text-pipeline.md) — opencc-js + s2t 变体（s2tw/s2twp 对古文有害）；句读无免费 API，降级链=手动圈点 UI 默认→用户自带 LLM key→本地模型远期；管线顺序：先句读→s2t→旧字形。
-- [印章生成方案](issues/06-seal-generation.md) — 篆书用全字库说文解字字型（政府开放授权，可改作子集化）；SVG 自研（opentype.js 转 path，feTurbulence 做旧，seed=印文哈希）；缺字整印退楷不混排。
+- [印章生成方案](issues/06-seal-generation.md) — SVG 自研（opentype.js 转 path，feTurbulence 做旧，seed=印文哈希）；缺字整印退楷不混排。**2026-07-31 复核修正：说文篆体实为「个人与系统发展」窄授权且不在开放数据集，排除；改用崇羲篆體（CC-BY-ND，整包原样分发+署名，11,596 字）**——详见票内后记。
 - [古籍版式规范与术语](issues/01-banshi-guifan.md) — 930+440 部实物统计打底：全比例参数化（框宽高比 0.7、天头:地脚 1.2–1.5:1、半叶 8–15 行×16–22 字）；双行夹注=半字号/右行先/注毕回单行（移植 JLREQ 割注规则）；句读不占字位；研究文档含引擎参数 schema 与 5 预设皮肤。
 - [开源古籍字体与授权](issues/02-guji-fonts.md) — 正文汇文明朝体（CC0 修正版）+ 夹注全字库正楷 TW-Kai（OFL）+ 标题京华老宋体（整包，禁改条款与子集冲突）+ 兜底 Noto Serif TC；样张同款 Kai Oldstyle 与康熙字典体均排除（商业/授权不明）；子集化主方案 = cn-font-split 切片自托管。
 - [渲染路线样张验证](issues/08-render-prototype.md) — 路线定案：自研布局引擎+SVG per-char，三出口共用坐标；夹注/圈点/半列版心/主题/纸墨纹理滤镜全部验证并活过导出；原型在 proto/render-route 分支；采下需求：颜色/字体可定制、纹理逼真（转 09/11）。

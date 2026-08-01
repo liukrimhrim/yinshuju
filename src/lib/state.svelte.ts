@@ -12,6 +12,9 @@ import {
 } from './engine/themes';
 import type { Meta } from './engine/types';
 import { DEMO_META, DEMO_TEXT } from './demo';
+import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
+import { pageGeo } from './engine/svg';
+import type { Font } from 'opentype.js';
 
 const STORAGE_KEY = 'yinshuju-doc-v1';
 
@@ -26,6 +29,23 @@ class AppState {
   textureStrength = $state(0.6);
   showPunct = $state(true);
   pageIdx = $state(0);
+  seals = $state<SealSpec[]>([
+    {
+      text: '印書局製',
+      style: 'bai',
+      shape: 'square',
+      slot: 'authorBelow',
+      kaiFallback: false,
+    },
+  ]);
+  sealFont = $state<Font | null>(null);
+  private sealFontRequested = false;
+
+  ensureSealFont() {
+    if (this.sealFontRequested) return;
+    this.sealFontRequested = true;
+    loadSealFont().then((f) => (this.sealFont = f));
+  }
 
   theme: Theme = $derived(
     THEMES.find((t) => t.id === this.themeId) ?? THEMES[0]!,
@@ -46,8 +66,37 @@ class AppState {
     fontFamily: fontFamily(this.fontId),
     showPunct: this.showPunct,
   });
+  private sealLayer = $derived.by(() => {
+    if (!this.seals.length)
+      return {
+        single: '',
+        spread: '',
+        missing: [] as { index: number; chars: string[] }[],
+      };
+    const base = { ...this.renderOpts };
+    const single = sealOverlaysFor(
+      this.seals,
+      this.sealFont,
+      pageGeo(base, 'single'),
+      this.palette,
+      fontFamily(this.fontId),
+    );
+    const spread = sealOverlaysFor(
+      this.seals,
+      this.sealFont,
+      pageGeo({ ...base, pageW: SPREAD_PAGE_W, pageH: BASE_PAGE_H }, 'spread'),
+      this.palette,
+      fontFamily(this.fontId),
+    );
+    return { single: single.svg, spread: spread.svg, missing: single.missing };
+  });
+  sealMissing = $derived(this.sealLayer.missing);
   svg = $derived(
-    renderPage(this.pages[this.curIdx]!, this.meta, this.renderOpts),
+    renderPage(this.pages[this.curIdx]!, this.meta, {
+      ...this.renderOpts,
+      overlays:
+        this.pages[this.curIdx]!.folio === 1 ? this.sealLayer.single : '',
+    }),
   );
   // 对开预览：整叶 32:28（右=当前叶，左=次叶，中央整列版心）
   svgSpread = $derived(
@@ -55,7 +104,13 @@ class AppState {
       this.pages[this.curIdx]!,
       this.pages[this.curIdx + 1] ?? null,
       this.meta,
-      { ...this.renderOpts, pageW: SPREAD_PAGE_W, pageH: BASE_PAGE_H },
+      {
+        ...this.renderOpts,
+        pageW: SPREAD_PAGE_W,
+        pageH: BASE_PAGE_H,
+        overlays:
+          this.pages[this.curIdx]!.folio === 1 ? this.sealLayer.spread : '',
+      },
     ),
   );
 
@@ -83,6 +138,7 @@ class AppState {
           ...this.palette,
           ...(s.palette as Partial<Palette> | undefined),
         };
+        if (Array.isArray(s.seals)) this.seals = s.seals as SealSpec[];
       }
     } catch {
       // 损坏的存档直接用默认值
@@ -105,6 +161,7 @@ class AppState {
       grid: { cols: this.cols, charsPerCol: this.charsPerCol },
       render,
       fontId: this.fontId,
+      seals: this.seals,
     };
   }
 
@@ -113,6 +170,7 @@ class AppState {
     const out: Record<string, unknown> = {
       meta: this.meta,
       palette: this.palette,
+      seals: this.seals,
     };
     for (const k of AppState.SCALARS) out[k] = self[k];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(out));

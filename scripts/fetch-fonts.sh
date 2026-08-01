@@ -23,4 +23,14 @@ if [ ! -f fonts-src/zhuque.ttf ]; then
   rm -f fonts-src/zhuque.zip
 fi
 
-ls -la fonts-src/*.ttf
+# 崇羲篆體（印章用，CC-BY-ND：整包原样分发、禁改作/子集化；署名王心怡、季旭昇）
+if [ ! -f fonts-src/chongxi_seal.otf ]; then
+  curl -sL -o fonts-src/chongxi_seal.zip \
+    "https://xiaoxue.iis.sinica.edu.tw/chongxi/files/chongxi_seal.zip"
+  unzip -o -q -j fonts-src/chongxi_seal.zip -d fonts-src/
+  rm -f fonts-src/chongxi_seal.zip
+fi
+mkdir -p public/fonts/seal
+cp -f fonts-src/chongxi_seal.otf public/fonts/seal/
+
+ls -la fonts-src/*.ttf fonts-src/*.otf

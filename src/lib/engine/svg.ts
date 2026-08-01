@@ -13,6 +13,7 @@ export interface RenderOptions {
   showPunct: boolean;
   pageW?: number; // 默认 16:28 基准开本
   pageH?: number;
+  overlays?: string; // 叠加层（印章等），已定位的 SVG 片段
 }
 
 const FISHTAIL_POS = 0.25;
@@ -222,7 +223,20 @@ function assemble(
       `<g filter="url(#inkErode)">${t.bigText}</g>` +
       `<g filter="url(#inkErodeNote)">${t.noteText}${t.marks}</g>`
     : `<rect width="${g.pageW}" height="${g.pageH}" fill="${P.paper}"/>${frame}${t.bigText}${t.noteText}${t.marks}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g.pageW} ${g.pageH}" font-family="${o.fontFamily}">${defs}${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g.pageW} ${g.pageH}" font-family="${o.fontFamily}">${defs}${body}${o.overlays ?? ''}</svg>`;
+}
+
+// 摆位几何（印章等叠加层用）：与渲染同一套公式
+export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
+  const slots = mode === 'spread' ? 2 * o.grid.cols + 1 : o.grid.cols + 0.5;
+  const g = makeGeo(o, slots);
+  return {
+    fx0: g.fx0,
+    fy0: g.fy0,
+    frameW: g.frameW,
+    frameH: g.frameH,
+    colW: g.colW,
+  };
 }
 
 // —— 单半叶：版心=折缝半列（左缘），左框开口 ——

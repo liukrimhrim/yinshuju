@@ -7,6 +7,9 @@ import type { RenderOptions } from './engine/svg';
 import type { GridParams, Meta } from './engine/types';
 import type { FontId } from './engine/themes';
 import type { PDFObject, PDFPage } from 'pdf-lib';
+import type { Font } from 'opentype.js';
+import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
+import { pageGeo } from './engine/svg';
 
 export interface RatioPreset {
   id: string;
@@ -87,6 +90,7 @@ export function usedTextOf(ctx: ExportContext): string {
     ctx.meta.author +
     ctx.meta.banxinTitle +
     ctx.meta.banxinJuan +
+    ctx.seals.map((s) => s.text).join('') +
     CN_NUM_CHARS
   );
 }
@@ -97,11 +101,16 @@ export interface ExportContext {
   text: string;
   meta: Meta;
   grid: GridParams;
-  render: Omit<RenderOptions, 'grid' | 'pageW' | 'pageH'>;
+  render: Omit<RenderOptions, 'grid' | 'pageW' | 'pageH' | 'overlays'>;
   fontId: FontId;
+  seals: SealSpec[];
 }
 
-export function planFor(ctx: ExportContext, ratio: number) {
+export function planFor(
+  ctx: ExportContext,
+  ratio: number,
+  sealFont?: Font | null,
+) {
   const plan = computeLayoutPlan(ratio, ctx.grid);
   const pages = layout(parse(ctx.text), ctx.meta, plan.grid);
   const opts: RenderOptions = {
@@ -110,10 +119,24 @@ export function planFor(ctx: ExportContext, ratio: number) {
     pageW: plan.pageW,
     pageH: plan.pageH,
   };
-  const svgAt = (idx: number): string =>
-    plan.mode === 'spread'
-      ? renderSpread(pages[idx]!, pages[idx + 1] ?? null, ctx.meta, opts)
-      : renderPage(pages[idx]!, ctx.meta, opts);
+  // 印章只上卷首叶（单叶=folio 1；对开=右半叶 folio 1）
+  const overlaysFor = (idx: number): string => {
+    if (!ctx.seals.length || pages[idx]!.folio !== 1) return '';
+    const geo = pageGeo(opts, plan.mode);
+    return sealOverlaysFor(
+      ctx.seals,
+      sealFont ?? null,
+      geo,
+      ctx.render.palette,
+      ctx.render.fontFamily,
+    ).svg;
+  };
+  const svgAt = (idx: number): string => {
+    const withOv = { ...opts, overlays: overlaysFor(idx) };
+    return plan.mode === 'spread'
+      ? renderSpread(pages[idx]!, pages[idx + 1] ?? null, ctx.meta, withOv)
+      : renderPage(pages[idx]!, ctx.meta, withOv);
+  };
   // 对开一版吃两叶
   const frames: number[] = [];
   for (let i = 0; i < pages.length; i += plan.mode === 'spread' ? 2 : 1)
@@ -161,7 +184,8 @@ export async function exportImage(
   frameIdx: number,
   opts: ImageOptions,
 ): Promise<ImageResult> {
-  const { plan, svgAt } = planFor(ctx, ratio);
+  const sealFont = ctx.seals.length ? await loadSealFont() : null;
+  const { plan, svgAt } = planFor(ctx, ratio, sealFont);
   const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx));
   const svg = withFontCSS(svgAt(frameIdx), css);
   const cv = await svgToCanvas(svg, plan.pageW, plan.pageH, opts.scale);
@@ -197,7 +221,8 @@ export async function exportPdf(
 ): Promise<PdfResult> {
   const { PDFDocument, PDFName, PDFHexString, PDFNumber, PDFArray } =
     await import('pdf-lib');
-  const { pages, svgAt, plan } = planFor(ctx, BASE_RATIO);
+  const sealFont = ctx.seals.length ? await loadSealFont() : null;
+  const { pages, svgAt, plan } = planFor(ctx, BASE_RATIO, sealFont);
   const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx));
   const doc = await PDFDocument.create();
   doc.setTitle(ctx.meta.title);
