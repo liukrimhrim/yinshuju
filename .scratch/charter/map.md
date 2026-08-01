@@ -29,6 +29,9 @@ Label: wayfinder:map
 <!-- 每张已关闭票据一行：标题链接 + 一句话结论 -->
 
 - [先行项目与可借力库](issues/04-prior-art.md) — 竖排渲染不必造轮子；可借力 vRain（版式参数对标）、heti、tategaki、nehan（分页）、luatex-cn（注文模型）；「web 即时预览×刻本保真×三出口」无人占据；最大风险是打印 PDF 竖排分页。
+- [竖排渲染与导出技术路线](issues/03-vertical-rendering.md) — 推荐自研布局引擎（网格→逐字坐标表）+ SVG per-char 渲染，三出口共用坐标数据；PNG=SVG→canvas，PDF=pdf-lib 嵌页；html2canvas/satori/@page 均以 issue 实证排除；双行夹注 CSS 无解、自排三行代码是决定性论据。
+- [简繁转换与自动句读](issues/05-text-pipeline.md) — opencc-js + s2t 变体（s2tw/s2twp 对古文有害）；句读无免费 API，降级链=手动圈点 UI 默认→用户自带 LLM key→本地模型远期；管线顺序：先句读→s2t→旧字形。
+- [印章生成方案](issues/06-seal-generation.md) — 篆书用全字库说文解字字型（政府开放授权，可改作子集化）；SVG 自研（opentype.js 转 path，feTurbulence 做旧，seed=印文哈希）；缺字整印退楷不混排。
 
 ## Not yet specified
 
