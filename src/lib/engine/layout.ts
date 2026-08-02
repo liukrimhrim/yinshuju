@@ -43,6 +43,15 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
   const freshCol = () => {
     if (half > 0) advanceCol();
   };
+  // 特殊列文字的实际占格（半格数）——拉丁成段后字符数≠占格数
+  const spanOfText = (text: string) =>
+    segmentLatin(text)
+      .filter((seg) => seg.s.trim())
+      .reduce(
+        (n, seg) => n + (seg.latin ? latinSpan(seg.s.length).hSpan : 2),
+        0,
+      );
+
   // 书名/著者/篇题等特殊列：同样按拉丁成段规则排（不换列，截断保护）
   const placeVert = (
     text: string,
@@ -52,6 +61,7 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
   ) => {
     let h = startHalf;
     for (const seg of segmentLatin(text)) {
+      if (!seg.s.trim()) continue; // 空白不占格
       const { hSpan, upright } = seg.latin
         ? latinSpan(seg.s.length)
         : { hSpan: 2, upright: false };
@@ -71,8 +81,9 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
 
   // 卷首页：列0 书名顶格，列1 著者低格（距底留二格）
   placeVert(meta.title, 0, 0, 'title');
-  const authorRow = Math.max(1, grid.charsPerCol - [...meta.author].length - 2);
-  placeVert(meta.author, 1, authorRow * 2, 'author');
+  // 著者低格：末尾留两字位给印章，按实际占格倒推起点
+  const authorHalf = Math.max(2, HMAX - 4 - spanOfText(meta.author));
+  placeVert(meta.author, 1, authorHalf, 'author');
   col = 2;
 
   for (const b of blocks) {

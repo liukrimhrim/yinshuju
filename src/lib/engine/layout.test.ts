@@ -183,6 +183,17 @@ describe('布局引擎', () => {
     expect(ds.hSpan).toBe(8);
   });
 
+  it('著者列按实际占格倒推起点：末尾恒留两字位给印章（含拉丁段）', () => {
+    const g = { cols: 10, charsPerCol: 17 };
+    const HMAX = g.charsPerCol * 2;
+    for (const author of ['戰國鬼谷子撰', 'DeepSeek 譯注', 'AI 撰']) {
+      const p = layout(parse('文'), { ...meta, author }, g)[0]!;
+      const col = p.chars.filter((c) => c.role === 'author');
+      const end = Math.max(...col.map((c) => c.half + (c.hSpan ?? 2)));
+      expect(end).toBe(HMAX - 4); // 恰好留两字位
+    }
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);
