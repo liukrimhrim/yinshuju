@@ -278,7 +278,7 @@ describe('布局引擎', () => {
     expect(at('\u3000\u3000甲', '甲').half).toBe(4); // 抬头空两格
   });
 
-  it('书名/著者栏支持 *小* **大** 标记，其余字符原样保留', () => {
+  it('书名/著者栏与正文同一套标记：字号、夹注、句读一致', () => {
     const m: Meta = {
       ...meta,
       title: '**鬼谷子**（校注）',
@@ -286,10 +286,17 @@ describe('布局引擎', () => {
     };
     const p = layout(parse('文'), m, grid, 1, 0.85)[0]!;
     const title = p.chars.filter((c) => c.role === 'title');
-    expect(title.map((c) => c.ch).join('')).toBe('鬼谷子（校注）'); // 星号不入字、括号保留
-    expect(title.find((c) => c.ch === '鬼')!.scale).toBeGreaterThan(
-      title.find((c) => c.ch === '校')!.scale!,
-    );
+    expect(
+      title
+        .filter((c) => c.kind === 'big')
+        .map((c) => c.ch)
+        .join(''),
+    ).toBe('鬼谷子'); // 星号不入字
+    // 括号内容＝双行小字夹注（与正文同规则）
+    const notes = title.filter((c) => c.kind === 'note');
+    expect(notes.map((c) => c.ch).join('')).toBe('校注');
+    expect(notes.some((c) => c.sub === 'R')).toBe(true);
+    expect(title.find((c) => c.ch === '鬼')!.scale).toBeGreaterThan(1);
     const author = p.chars.filter((c) => c.role === 'author');
     expect(author.map((c) => c.ch).join('')).toBe('戰國鬼谷子撰');
     expect(author.find((c) => c.ch === '鬼')!.scale).toBeLessThan(

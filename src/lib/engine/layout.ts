@@ -8,6 +8,7 @@ import type {
   PlacedChar,
 } from './types';
 import { latinSpan, segmentLatin } from './latin';
+import { parsePara } from './parse';
 
 // 字号 → （占用半格数, 字号倍率）。恒守行格：小字两枚合一字位、大字独占两字位
 const SIZE: Record<CharSize | 'body', { hSpan: number; scale: number }> = {
@@ -52,19 +53,6 @@ export function layout(
   };
   // 特殊列文字的实际占格（半格数）——拉丁成段后字符数≠占格数
   const cellsFor = (scale: number) => Math.max(2, Math.ceil(scale * 2));
-  const spanOfSeg = (text: string, scale: number) =>
-    segmentLatin(text).reduce(
-      (n, seg) =>
-        !seg.s.trim()
-          ? n + (seg.s === '\u3000' ? 2 : 1)
-          : n + (seg.latin ? latinSpan(seg.s.length).hSpan : cellsFor(scale)),
-      0,
-    );
-  const spanOfText = (text: string, scale = 1) =>
-    splitSized(text).reduce(
-      (n, seg) => n + spanOfSeg(seg.s, scale * SIZE[seg.size ?? 'body'].scale),
-      0,
-    );
   // 按 run 排（篇题/题署行支持行内字号与拉丁成段）；不换列，截断保护
   const runSpan = (r: Run, baseScale: number) =>
     r.t === 'latin'
@@ -73,15 +61,14 @@ export function layout(
           baseScale * SIZE[r.t === 'text' ? (r.size ?? 'body') : 'body'].scale,
         );
   const spanOfRuns = (runs: Run[], baseScale = 1) =>
-    runs.reduce(
-      (n, r) =>
-        r.t === 'space'
-          ? n + r.halves
-          : r.t === 'text' || r.t === 'latin'
-            ? n + runSpan(r, baseScale)
-            : n,
-      0,
-    );
+    runs.reduce((n, r) => {
+      if (r.t === 'space') return n + r.halves;
+      if (r.t === 'note') {
+        const rlen = Math.ceil(r.chars.length / 2);
+        return n + rlen + (rlen % 2); // 双行小字，注毕回字位
+      }
+      return r.t === 'text' || r.t === 'latin' ? n + runSpan(r, baseScale) : n;
+    }, 0);
   const placeRuns = (
     runs: Run[],
     atCol: number,
@@ -90,16 +77,42 @@ export function layout(
     baseScale = 1,
   ) => {
     let h = startHalf;
+    let last: PlacedChar | null = null;
     for (const r of runs) {
       if (r.t === 'space') {
         h += r.halves;
         continue;
       }
-      if (r.t !== 'text' && r.t !== 'latin') continue; // 题名列不排夹注/句读
+      if (r.t === 'punct') {
+        if (last) last.punct = r.kind; // 句读附着前字
+        continue;
+      }
+      if (r.t === 'note') {
+        // 夹注：与正文同法，双行小字（此列不换列，超出即截断）
+        const avail = HMAX - h;
+        const k = Math.min(r.chars.length, Math.max(0, avail) * 2);
+        const rlen = Math.ceil(k / 2);
+        for (let j = 0; j < k; j++) {
+          const nc = r.chars[j]!;
+          cur.push({
+            kind: 'note',
+            ch: nc.ch,
+            col: atCol,
+            half: h + (j < rlen ? j : j - rlen),
+            hSpan: 1,
+            sub: j < rlen ? 'R' : 'L',
+            role,
+            ...(nc.punct ? { punct: nc.punct } : {}),
+          });
+        }
+        h += rlen;
+        if (h % 2) h++; // 注毕回字位
+        continue;
+      }
       const hSpan = runSpan(r, baseScale);
       if (h + hSpan > HMAX) break;
       const upright = r.t === 'latin' && latinSpan(r.s.length).upright;
-      cur.push({
+      const placed: PlacedChar = {
         kind: r.t === 'latin' ? 'latin' : 'big',
         ch: r.s,
         col: atCol,
@@ -108,77 +121,22 @@ export function layout(
         scale: baseScale * SIZE[r.size ?? 'body'].scale,
         role,
         ...(upright ? { upright: true } : {}),
-      });
+      };
+      cur.push(placed);
+      last = placed;
       h += hSpan;
     }
   };
 
-  // 元数据栏（书名/著者）只识别字号标记，其余字符（括号、间隔号等）原样保留
-  const splitSized = (text: string): { s: string; size?: CharSize }[] => {
-    const out: { s: string; size?: CharSize }[] = [];
-    let cur: CharSize | undefined;
-    let buf = '';
-    const flush = () => {
-      if (buf) out.push(cur ? { s: buf, size: cur } : { s: buf });
-      buf = '';
-    };
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === '*') {
-        const double = text[i + 1] === '*';
-        const want: CharSize = double ? 'large' : 'small';
-        flush();
-        cur = cur === want ? undefined : want;
-        i += double ? 1 : 0;
-        continue;
-      }
-      buf += text[i];
-    }
-    flush();
-    return out;
-  };
-
-  // 书名/著者/篇题等特殊列：同样按拉丁成段规则排（不换列，截断保护）
-  const placeVert = (
-    text: string,
-    atCol: number,
-    startHalf: number,
-    role: PlacedChar['role'],
-    scale = 1,
-  ) => {
-    let h = startHalf;
-    for (const sized of splitSized(text))
-      for (const seg of segmentLatin(sized.s)) {
-        const segScale = scale * SIZE[sized.size ?? 'body'].scale;
-        if (!seg.s.trim()) {
-          h += seg.s === '\u3000' ? 2 : 1; // 空格留白
-          continue;
-        }
-        const { hSpan, upright } = seg.latin
-          ? latinSpan(seg.s.length)
-          : { hSpan: cellsFor(segScale), upright: false };
-        if (h + hSpan > HMAX) break;
-        cur.push({
-          kind: seg.latin ? 'latin' : 'big',
-          ch: seg.s,
-          col: atCol,
-          half: h,
-          hSpan,
-          scale: segScale,
-          role,
-          ...(upright ? { upright: true } : {}),
-        });
-        h += hSpan;
-      }
-  };
-
   // 卷首页：列0 书名顶格，列1 著者低格（距底留二格）
-  placeVert(meta.title, 0, 0, 'title', titleScale);
+  placeRuns(parsePara(meta.title), 0, 0, 'title', titleScale);
   // 著者低格：末尾留两字位给印章，按实际占格倒推起点
+  const authorRuns = parsePara(meta.author);
   const authorHalf = Math.max(
     2,
-    HMAX - 4 - spanOfText(meta.author, authorScale),
+    HMAX - 4 - spanOfRuns(authorRuns, authorScale),
   );
-  placeVert(meta.author, 1, authorHalf, 'author', authorScale);
+  placeRuns(authorRuns, 1, authorHalf, 'author', authorScale);
   col = 2;
 
   for (const b of blocks) {
