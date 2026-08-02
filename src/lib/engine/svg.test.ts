@@ -123,12 +123,32 @@ describe('SVG 渲染', () => {
       const big = glyphs.filter((g) => g.fs === maxFs);
       const rightMost = Math.max(...big.map((g) => g.x));
       const topMost = Math.min(...big.map((g) => g.y));
-      const frameRight = 640 - (640 - 0.7 * 0.68 * 1120) / 2;
-      const frameTop = ((1120 - 0.68 * 1120) * 1.5) / 2.5;
+      const frame = /<path d="M([\d.]+),([\d.]+) H([\d.]+)/.exec(svg)!;
+      const frameRight = Number(frame[3]);
+      const frameTop = Number(frame[2]);
       // 字面右缘/上缘须离框线至少 3u
       expect(frameRight - (rightMost + maxFs / 2)).toBeGreaterThan(3);
       expect(topMost - maxFs / 2 - frameTop).toBeGreaterThan(3);
     }
+  });
+
+  it('单半叶：版框左缘（版心中缝）贴页面左边，余幅归订口侧', () => {
+    const svg = renderPage(page, meta, opts('zhusilan'));
+    const frame = /<path d="M([\d.]+),([\d.]+) H([\d.]+)/.exec(svg)!;
+    expect(Number(frame[1])).toBe(0); // 折缝贴边
+    // 版心（鱼尾）中线亦在 0，右半可见
+    expect(svg).toMatch(/<path d="M-[\d.]+,[\d.]+ h/);
+  });
+
+  it('对开整叶：两侧对称留边（非折缝页，不贴边）', () => {
+    const pages = layout(parse('字'.repeat(200)), meta, grid);
+    const svg = renderSpread(pages[0]!, pages[1] ?? null, meta, {
+      ...opts('zhusilan'),
+      pageW: 1120,
+      pageH: 1120,
+    });
+    const rect = /<rect x="([\d.]+)"/.exec(svg)!;
+    expect(Number(rect[1])).toBeGreaterThan(10);
   });
 
   it('toCnNum：一位/十位/两位', () => {

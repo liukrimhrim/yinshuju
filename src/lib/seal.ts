@@ -158,6 +158,9 @@ export interface SealGeo {
   frameH: number;
   colW: number;
   tx1: number; // 正文区右缘
+  ty0: number; // 正文区上缘
+  cellH: number; // 一字格高
+  rows: number; // 每列字数
 }
 
 export function sealOverlaysFor(
@@ -167,15 +170,17 @@ export function sealOverlaysFor(
   palette: Palette,
   fallbackFamily: string,
 ): { svg: string; missing: { index: number; chars: string[] }[] } {
-  const size = geo.colW * 0.92;
+  // 印面不超过列宽，也不超过两字格高（著者列末尾恰留两格空位，见 layout）
+  const size = Math.min(geo.colW * 0.92, geo.cellH * 1.9);
+  const colBottom = geo.ty0 + (geo.rows - 2) * geo.cellH; // 末二格起
   const slotBase: Record<SealSpec['slot'], { x: number; y: number }> = {
     authorBelow: {
       x: geo.tx1 - 2 * geo.colW + (geo.colW - size) / 2,
-      y: geo.fy0 + geo.frameH * 0.8,
+      y: colBottom,
     },
     juanshou: {
       x: geo.tx1 - geo.colW + (geo.colW - size) / 2,
-      y: geo.fy0 + geo.frameH * 0.86,
+      y: colBottom,
     },
     tiantou: {
       x: geo.tx1 - size * 1.05,
@@ -193,7 +198,7 @@ export function sealOverlaysFor(
     const off = (stack[s.slot] ?? 0) * (art.h + size * 0.22);
     stack[s.slot] = (stack[s.slot] ?? 0) + 1;
     // 天头槽向上堆，框内槽向下堆
-    const y = s.slot === 'tiantou' ? base.y - off : base.y + off;
+    const y = base.y - off; // 天头向上、框内自末二格向上堆叠，均不越界
     svg += `<g transform="translate(${base.x.toFixed(1)},${y.toFixed(1)})">${art.body}</g>`;
   });
   return { svg, missing };

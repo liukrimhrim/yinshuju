@@ -79,7 +79,10 @@ function makeGeo(
 ): Geo {
   const pageH = o.pageH ?? BASE_PAGE_H;
   const pageW = o.pageW ?? Math.round(BASE_PAGE_H * BASE_RATIO);
-  const { frameW, frameH, fx0, fy0 } = frameDims(pageW, pageH);
+  const { frameW, frameH, fx0: baseFx0, fy0 } = frameDims(pageW, pageH);
+  // 单半叶：折缝即版心中缝，故版框左缘（=版心中线）贴页面左边，无外白边；
+  // 水平余幅全归订口侧（右）。对开整叶两侧对称。
+  const fx0 = mode === 'single' ? 0 : baseFx0;
   const pad = padOf(o.frameWidth);
   // 单叶：仅右侧有内线（左缘是折缝）；对开：左右都有
   const usableW = frameW - (mode === 'spread' ? 2 * pad.side : pad.side);
@@ -297,6 +300,9 @@ export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
     frameH: g.frameH,
     colW: g.colW,
     tx1: g.tx1,
+    ty0: g.ty0,
+    cellH: g.cellH,
+    rows: o.grid.charsPerCol,
   };
 }
 
