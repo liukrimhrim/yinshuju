@@ -46,7 +46,7 @@ class AppState {
   indentSym = $state(true); // 上下对称
   chapterIndent = $state(2); // 篇题低格（字位）
   authorIndent = $state(2); // 题署距底留白（字位）
-  chapterScale = $state(1); // 篇题字号倍率
+  chapterScale = $state(0.85); // 篇题字号倍率（与著者同基准，行内小字方能齐平）
   titleScale = $state(1.3); // 书名字号倍率（卷端题名多大于正文）
   authorScale = $state(0.85);
   pageIdx = $state(0);
