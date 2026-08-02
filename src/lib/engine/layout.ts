@@ -110,6 +110,13 @@ export function layout(
       advanceCol(); // 空一列
       continue;
     }
+    if (b.type === 'author') {
+      // 正文中的题署：自成一列，与卷端著者同样低格对齐（末留两字位）
+      const start = Math.max(0, HMAX - 4 - spanOfText(b.text, authorScale));
+      placeVert(b.text, col, start, 'author', authorScale);
+      advanceCol();
+      continue;
+    }
     if (b.type === 'chapter') {
       curChapters.push(b.text);
       placeVert(b.text, col, 4, 'chapter'); // 低二格

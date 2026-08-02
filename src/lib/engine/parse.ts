@@ -126,6 +126,14 @@ export function parse(src: string): Block[] {
       blocks.push({ type: 'pagebreak' }); // 分叶符：其后文字另起一叶
       continue;
     }
+    if (line.trim().startsWith('>')) {
+      flush();
+      blocks.push({
+        type: 'author',
+        text: line.trim().replace(/^>+\s*/, ''),
+      });
+      continue;
+    }
     if (line.trim().startsWith('#')) {
       flush();
       blocks.push({ type: 'chapter', text: line.trim().replace(/^#+\s*/, '') });

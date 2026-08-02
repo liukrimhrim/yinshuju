@@ -30,7 +30,8 @@ export type Block =
   | { type: 'chapter'; text: string }
   | { type: 'para'; runs: Run[] }
   | { type: 'blank' } // 额外空行 → 空一列
-  | { type: 'pagebreak' }; // --- 行 → 换叶
+  | { type: 'pagebreak' } // --- 行 → 换叶
+  | { type: 'author'; text: string }; // > 行 → 著者列（自成一列、低格对齐）
 
 // —— 布局输出：纯网格坐标（几何换算归 svg 层） ——
 

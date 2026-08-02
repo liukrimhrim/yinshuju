@@ -228,6 +228,27 @@ describe('布局引擎', () => {
     ).toHaveLength(2);
   });
 
+  it('> 行＝正文中的题署：自成一列、低格对齐，可多位并存于一叶', () => {
+    const g = { cols: 12, charsPerCol: 17 };
+    const HMAX = g.charsPerCol * 2;
+    const src = '# 捭闔\n> 戰國鬼谷子撰\n甲乙\n\n# 靜夜思\n> 李白撰\n丙丁';
+    const p = layout(parse(src), meta, g)[0]!;
+    const inline = p.chars.filter((c) => c.role === 'author' && c.col >= 2);
+    const cols = [...new Set(inline.map((c) => c.col))];
+    expect(cols).toHaveLength(2); // 两位题署各占一列
+    for (const c of cols) {
+      const end = Math.max(
+        ...inline
+          .filter((x) => x.col === c)
+          .map((x) => x.half + (x.hSpan ?? 2)),
+      );
+      expect(end).toBe(HMAX - 4); // 与卷端著者同样低格对齐
+    }
+    // 题署后的正文另起一列
+    const jia = bigs(p).find((c) => c.ch === '甲')!;
+    expect(jia.col).toBeGreaterThan(cols[0]!);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);
