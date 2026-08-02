@@ -48,6 +48,18 @@ describe('SVG 渲染', () => {
     expect(svg).toContain('scale="2.60"'); // 4.33 × 0.6
   });
 
+  it('句＝空心小圈，读＝顿号状水滴笔触（非圆点）', () => {
+    const svg = renderPage(page, meta, opts('zhusilan'));
+    const mark = THEMES.find((x) => x.id === 'zhusilan')!.palette.mark;
+    // 句：描边不填的小圈
+    expect(svg).toMatch(new RegExp(`<circle[^>]*fill="none" stroke="${mark}"`));
+    // 读：两段二次曲线闭合的水滴，实心；且不存在实心圆点
+    expect(svg).toMatch(
+      new RegExp(`<path d="M[\\d.]+,[\\d.]+ Q[^"]*Q[^"]*Z" fill="${mark}"`),
+    );
+    expect(new RegExp(`<circle[^>]*fill="${mark}"`).test(svg)).toBe(false);
+  });
+
   it('句读圈点可整体关闭', () => {
     expect(renderPage(page, meta, opts('zhusilan', true))).toContain('<circle');
     expect(renderPage(page, meta, opts('zhusilan', false))).not.toContain(
@@ -190,12 +202,13 @@ describe('SVG 渲染', () => {
     // 黑尾：实心直叉（L 命令，无 Q）
     const black = ft('black');
     expect(black).toMatch(/<path d="M[^"]*L[^"]*" fill="#/);
-    expect(/<path d="M[^"]*Q[^"]*Z" fill="#/.test(black)).toBe(false); // 黑尾直叉
+    // 黑尾为直叉：其带身 path（含 H 命令）内不应出现曲线
+    expect(/<path d="M[^"]*H[^"]*Q[^"]*Z" fill="#/.test(black)).toBe(false);
     expect(black).toMatch(/<path d="M[\d.-]+,[\d.]+L[^"]*" fill="none"/); // 回声细线
 
     // 白尾＝黑尾不着墨：无填充块，只有叉线+回声线
     const white = ft('white');
-    expect(/<path d="M[^"]*Z" fill="#/.test(white)).toBe(false);
+    expect(/<path d="M[^"]*H[^"]*Z" fill="#/.test(white)).toBe(false);
     expect(
       (white.match(/<path d="M[\d.-]+,[\d.]+[LQ][^"]*" fill="none"/g) ?? [])
         .length,
@@ -204,13 +217,13 @@ describe('SVG 渲染', () => {
     // 花尾：波浪云头叉（Q 命令）+ 每侧两片纸色叶饰
     const flower = ft('flower');
     const paper = THEMES.find((x) => x.id === 'zhusilan')!.palette.paper;
-    expect(flower).toMatch(/<path d="M[^"]*Q[^"]*Z" fill="#/);
+    expect(flower).toMatch(/<path d="M[^"]*H[^"]*Q[^"]*Z" fill="#/);
     expect((flower.match(/<ellipse[^>]*rotate/g) ?? []).length).toBe(4);
     expect(flower).toContain(`fill="${paper}"`);
 
     // 线尾：三道层叠叉线 + 回声线，均不填充
     const line = ft('line');
-    expect(/<path d="M[^"]*Z" fill="#/.test(line)).toBe(false); // 无实心块
+    expect(/<path d="M[^"]*H[^"]*Z" fill="#/.test(line)).toBe(false); // 无实心块
     expect(
       (line.match(/<path d="M[\d.-]+,[\d.]+[LQ][^"]*" fill="none"/g) ?? [])
         .length,

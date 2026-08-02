@@ -164,6 +164,19 @@ function buildDefs(g: Geo, o: RenderOptions, seed: number): string {
   </defs>`;
 }
 
+// 读（丶）：形如顿号的水滴笔触——起笔尖细在左上，按笔渐肥收于右下
+function douStroke(x: number, y: number, r: number, fill: string): string {
+  const w = r * 1.5;
+  const h = r * 2.4;
+  const x0 = x - w * 0.35;
+  const y0 = y - h * 0.45;
+  return (
+    `<path d="M${x0.toFixed(1)},${y0.toFixed(1)}` +
+    ` Q${(x0 + w * 1.15).toFixed(1)},${(y0 + h * 0.3).toFixed(1)} ${(x0 + w * 0.86).toFixed(1)},${(y0 + h).toFixed(1)}` +
+    ` Q${(x0 + w * 0.1).toFixed(1)},${(y0 + h * 0.62).toFixed(1)} ${x0.toFixed(1)},${y0.toFixed(1)} Z" fill="${fill}"/>`
+  );
+}
+
 function vertText(
   text: string,
   x: number,
@@ -424,7 +437,7 @@ function glyphs(
       acc.marks +=
         ch.punct === 'ju'
           ? `<circle cx="${m.markX}" cy="${my}" r="${m.markR.toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="1.5"/>`
-          : `<circle cx="${m.markX}" cy="${my}" r="${(m.markR * 0.6).toFixed(1)}" fill="${P.mark}"/>`;
+          : douStroke(m.markX, my, m.markR * 0.72, P.mark);
     }
   }
 }
