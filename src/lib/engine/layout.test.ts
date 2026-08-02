@@ -130,7 +130,7 @@ describe('布局引擎', () => {
     const p = layout(parse('甲*乙丙*丁**戊**'), meta, grid)[0]!;
     const of = (ch: string) => bigs(p).find((c) => c.ch === ch)!;
     expect(of('甲').hSpan).toBe(2);
-    expect(of('乙').hSpan).toBe(1);
+    expect(of('乙').hSpan).toBe(1); // 默认小字 0.7×：两枚合一字位
     expect(of('丙').hSpan).toBe(1);
     // 两个小字合占一个字位：乙丙紧邻半格
     expect(of('丙').half - of('乙').half).toBe(1);
@@ -140,6 +140,16 @@ describe('布局引擎', () => {
     expect(of('戊').half % 2).toBe(0);
     expect(of('戊').scale).toBeGreaterThan(1);
     expect(of('乙').scale).toBeLessThan(1);
+  });
+
+  it('小字倍率过大时独占一字位（免上下相碰）', () => {
+    const p = layout(parse('甲*乙丙*丁'), meta, grid, 1, 0.85, undefined, {
+      small: 0.85,
+      large: 1.8,
+    })[0]!;
+    const of = (ch: string) => bigs(p).find((c) => c.ch === ch)!;
+    expect(of('乙').hSpan).toBe(2);
+    expect(of('丙').half - of('乙').half).toBe(2);
   });
 
   it('大字放不下整两格时改排下一列', () => {

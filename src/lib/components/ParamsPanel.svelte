@@ -181,7 +181,7 @@
           id="p-ss"
           type="range"
           min="0.35"
-          max="0.9"
+          max="1"
           step="0.05"
           bind:value={app.sizeSmall}
         />

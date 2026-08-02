@@ -15,13 +15,14 @@ export interface SizeScales {
   small: number; // *小字* 倍率
   large: number; // **大字** 倍率
 }
-export const DEFAULT_SIZES: SizeScales = { small: 0.55, large: 1.8 };
+export const DEFAULT_SIZES: SizeScales = { small: 0.7, large: 1.8 };
 
 // 占格＝ceil(倍率×2) 半格：小字合占一字位、正文一字位、大字随倍率占两格以上
 const scaleOf = (k: CharSize | 'body', s: SizeScales) =>
   k === 'small' ? s.small : k === 'large' ? s.large : 1;
+// 占格随倍率走：≤0.74 两枚合一字位；0.75–1 独占一字位；>1 按 ceil(倍率×2)
 const spanOfScale = (scale: number) =>
-  scale < 1 ? 1 : Math.max(2, Math.ceil(scale * 2));
+  scale <= 0.74 ? 1 : Math.max(2, Math.ceil(scale * 2));
 
 // 布局引擎：块 → 逐页网格坐标（col 右起 0，half 半格游标；大字占 2 半格）
 // 几何换算（px）不在此层，见 svg.ts

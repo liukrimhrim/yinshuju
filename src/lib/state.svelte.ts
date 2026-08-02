@@ -40,7 +40,7 @@ class AppState {
   convertS2T = $state(false); // 简→繁（s2t）
   s2t = $state<((s: string) => string) | null>(null); // 转换器（懒加载后填入）
   sizeLarge = $state(1.8); // **大字** 倍率
-  sizeSmall = $state(0.55); // *小字* 倍率
+  sizeSmall = $state(0.7); // *小字* 倍率
   indentTop = $state(0); // 天头留白（字位）
   indentBottom = $state(0); // 地脚留白
   indentSym = $state(true); // 上下对称
