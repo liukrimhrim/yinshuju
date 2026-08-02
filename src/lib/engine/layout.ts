@@ -34,8 +34,18 @@ export function layout(
 ): Page[] {
   // 列内可排区间 [HMIN, HMAX)：留白由此扣除，全列（正文/题名/题署）一致
   const HTOTAL = grid.charsPerCol * 2;
-  const HMIN = Math.max(0, Math.round(indent.top * 2));
-  const HMAX = Math.max(HMIN + 2, HTOTAL - Math.round(indent.bottom * 2));
+  const rangeOf = (ind: Indent) => {
+    const lo = Math.max(0, Math.round(ind.top * 2));
+    return {
+      lo,
+      hi: Math.max(lo + 2, HTOTAL - Math.round(ind.bottom * 2)),
+    };
+  };
+  const HMIN = rangeOf(indent).lo;
+  const HMAX = rangeOf(indent).hi;
+  // 当前生效区间（段落可用 [天,地] 覆盖）
+  let hMin = HMIN;
+  let hMax = HMAX;
   const pages: Page[] = [];
   let cur: PlacedChar[] = [];
   let curChapters: string[] = [];
@@ -48,17 +58,17 @@ export function layout(
     cur = [];
     curChapters = [];
     col = 0;
-    half = HMIN;
+    half = hMin;
   };
   const advanceCol = () => {
     if (col + 1 >= grid.cols) flushPage();
     else {
       col++;
-      half = HMIN;
+      half = hMin;
     }
   };
   const freshCol = () => {
-    if (half > HMIN) advanceCol();
+    if (half > hMin) advanceCol();
   };
   // 特殊列文字的实际占格（半格数）——拉丁成段后字符数≠占格数
   const cellsFor = (scale: number) => Math.max(2, Math.ceil(scale * 2));
@@ -98,7 +108,7 @@ export function layout(
       }
       if (r.t === 'note') {
         // 夹注：与正文同法，双行小字（此列不换列，超出即截断）
-        const avail = HMAX - h;
+        const avail = hMax - h;
         const k = Math.min(r.chars.length, Math.max(0, avail) * 2);
         const rlen = Math.ceil(k / 2);
         for (let j = 0; j < k; j++) {
@@ -119,7 +129,7 @@ export function layout(
         continue;
       }
       const hSpan = runSpan(r, baseScale);
-      if (h + hSpan > HMAX) break;
+      if (h + hSpan > hMax) break;
       const upright = r.t === 'latin' && latinSpan(r.s.length).upright;
       const placed: PlacedChar = {
         kind: r.t === 'latin' ? 'latin' : 'big',
@@ -150,6 +160,15 @@ export function layout(
 
   for (const b of blocks) {
     freshCol();
+    // 段落可自带留白（[天,地]），其余块用全局值
+    const nextRange = rangeOf(
+      b.type === 'para' && b.indent ? b.indent : indent,
+    );
+    if (nextRange.lo !== hMin || nextRange.hi !== hMax) {
+      hMin = nextRange.lo;
+      hMax = nextRange.hi;
+      half = hMin; // freshCol 已到列首，按新区间重置起点
+    }
     if (b.type === 'pagebreak') {
       // 本叶已有正文才换叶，避免连续分叶符产出空叶
       if (cur.some((c) => !c.role)) flushPage();
@@ -161,7 +180,7 @@ export function layout(
     }
     if (b.type === 'author') {
       // 正文中的题署：自成一列，与卷端著者同样低格对齐（末留两字位）
-      const start = Math.max(HMIN, HMAX - 4 - spanOfRuns(b.runs, authorScale));
+      const start = Math.max(hMin, hMax - 4 - spanOfRuns(b.runs, authorScale));
       placeRuns(b.runs, col, start, 'author', authorScale);
       advanceCol();
       continue;
@@ -176,7 +195,7 @@ export function layout(
       if (r.t === 'text') {
         const { hSpan, scale } = SIZE[r.size ?? 'body'];
         if (hSpan > 1 && half % 2) half++; // 正文与大字须对齐字位
-        if (half + hSpan > HMAX) advanceCol();
+        if (half + hSpan > hMax) advanceCol();
         const o: PlacedChar = {
           kind: 'big',
           ch: r.s,
@@ -193,7 +212,7 @@ export function layout(
         const { hSpan, upright } = latinSpan(r.s.length);
         const { scale } = SIZE[r.size ?? 'body'];
         if (half % 2) half++;
-        if (half + hSpan > HMAX) advanceCol();
+        if (half + hSpan > hMax) advanceCol();
         const o: PlacedChar = {
           kind: 'latin',
           ch: r.s,
@@ -209,7 +228,7 @@ export function layout(
         if (half % 2) half++; // 其后正文回字位
       } else if (r.t === 'space') {
         half += r.halves;
-        if (half >= HMAX) advanceCol();
+        if (half >= hMax) advanceCol();
       } else if (r.t === 'punct') {
         if (lastBig) lastBig.punct = r.kind;
       } else {
@@ -217,8 +236,8 @@ export function layout(
         let i = 0;
         const L = r.chars.length;
         while (i < L) {
-          if (half >= HMAX) advanceCol();
-          const avail = HMAX - half;
+          if (half >= hMax) advanceCol();
+          const avail = hMax - half;
           const k = Math.min(L - i, avail * 2);
           const rlen = Math.ceil(k / 2);
           for (let j = 0; j < k; j++) {

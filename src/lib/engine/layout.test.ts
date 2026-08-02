@@ -336,6 +336,28 @@ describe('布局引擎', () => {
     expect(end2).toBe(HTOTAL - 6 - 4);
   });
 
+  it('段落级留白 [天,地]：只对该段生效，其余段照旧', () => {
+    const g = { cols: 10, charsPerCol: 17 };
+    const p = layout(parse('甲\n\n[2]乙\n\n[0,3]丙\n\n丁'), meta, g)[0]!;
+    const at = (ch: string) => p.chars.find((c) => c.ch === ch && !c.role)!;
+    expect(at('甲').half).toBe(0); // 无留白
+    expect(at('乙').half).toBe(4); // 天头留 2 字
+    expect(at('丙').half).toBe(0); // 只留地脚 → 顶端照旧
+    expect(at('丁').half).toBe(0); // 恢复全局
+    expect(at('乙').col).toBeGreaterThan(at('甲').col);
+  });
+
+  it('段落留白与全局留白并存：段落值覆盖全局', () => {
+    const g = { cols: 10, charsPerCol: 17 };
+    const p = layout(parse('甲\n\n[0]乙'), meta, g, 1, 0.85, {
+      top: 2,
+      bottom: 0,
+    })[0]!;
+    const at = (ch: string) => p.chars.find((c) => c.ch === ch && !c.role)!;
+    expect(at('甲').half).toBe(4); // 全局天头 2 字
+    expect(at('乙').half).toBe(0); // 该段覆盖为 0
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

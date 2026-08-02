@@ -120,9 +120,23 @@ export function parse(src: string): Block[] {
   const blocks: Block[] = [];
   let paraLines: string[] = [];
   let blankRun = 0;
+  // 段首留白指令：[2]＝天地各留 2 字位；[2,0]＝只留天头；[0,3]＝只留地脚
+  const INDENT_RE = /^\[(\d+(?:\.\d+)?)(?:\s*[,，]\s*(\d+(?:\.\d+)?))?\]\s*/;
   const flush = () => {
     if (paraLines.length) {
-      blocks.push({ type: 'para', runs: parsePara(paraLines.join('\n')) });
+      let body = paraLines.join('\n');
+      let indent: { top: number; bottom: number } | undefined;
+      const m = INDENT_RE.exec(body);
+      if (m) {
+        const top = Number(m[1]);
+        indent = { top, bottom: m[2] === undefined ? top : Number(m[2]) };
+        body = body.slice(m[0].length);
+      }
+      blocks.push({
+        type: 'para',
+        runs: parsePara(body),
+        ...(indent ? { indent } : {}),
+      });
       paraLines = [];
     }
   };
