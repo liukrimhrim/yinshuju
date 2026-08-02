@@ -53,9 +53,11 @@ describe('SVG 渲染', () => {
     const mark = THEMES.find((x) => x.id === 'zhusilan')!.palette.mark;
     // 句：描边不填的小圈
     expect(svg).toMatch(new RegExp(`<circle[^>]*fill="none" stroke="${mark}"`));
-    // 读：两段二次曲线闭合的水滴，实心；且不存在实心圆点
+    // 读：三段三次曲线闭合的毛笔点（起笔尖→按笔肥→收笔钝），实心；无圆点
     expect(svg).toMatch(
-      new RegExp(`<path d="M[\\d.]+,[\\d.]+ Q[^"]*Q[^"]*Z" fill="${mark}"`),
+      new RegExp(
+        `<path d="M[\\d.]+,[\\d.]+ C[^"]*C[^"]*C[^"]*Z" fill="${mark}"`,
+      ),
     );
     expect(new RegExp(`<circle[^>]*fill="${mark}"`).test(svg)).toBe(false);
   });
