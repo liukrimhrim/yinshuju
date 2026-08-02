@@ -11,7 +11,8 @@ export type Run =
   | { t: 'text'; s: string; mark?: SideMark; size?: CharSize }
   | { t: 'latin'; s: string; size?: CharSize } // 连续拉丁/数字，整段排布
   | { t: 'note'; chars: NoteChar[] } // 双行小字夹注
-  | { t: 'punct'; kind: PunctKind }; // 句读，附着于前一大字
+  | { t: 'punct'; kind: PunctKind } // 句读，附着于前一大字
+  | { t: 'space'; halves: number }; // 空格：半角半字位、全角一字位
 
 // 旁线标记（markup v2，vRain 体系）：书名波浪线/着重圈注/点注/专名直线，画在字右侧
 export type SideMark = 'book' | 'circle' | 'dot' | 'line';

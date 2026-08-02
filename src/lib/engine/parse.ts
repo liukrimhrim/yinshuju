@@ -44,7 +44,11 @@ const MARK_CLOSE = new Set(['》', '｝', '＞', '］']);
 
 // 纯文本（去掉行内标记）——供 PDF 书签与版心篇题使用
 const plainOf = (runs: Run[]) =>
-  runs.map((r) => (r.t === 'text' || r.t === 'latin' ? r.s : '')).join('');
+  runs
+    .map((r) =>
+      r.t === 'text' || r.t === 'latin' ? r.s : r.t === 'space' ? ' ' : '',
+    )
+    .join('');
 
 export function parsePara(b: string): Run[] {
   const runs: Run[] = [];
@@ -88,6 +92,12 @@ export function parsePara(b: string): Run[] {
         ...(curSize ? { size: curSize } : {}),
       });
       i += seg.s.length;
+      continue;
+    }
+    // 空格留白：半角半字位、全角一字位（抬头、停顿等用）
+    if (c === ' ' || c === '\u3000' || c === '\t') {
+      runs.push({ t: 'space', halves: c === '\u3000' ? 2 : 1 });
+      i++;
       continue;
     }
     const k = punctKind(c);

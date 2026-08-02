@@ -53,13 +53,13 @@ export function layout(
   // 特殊列文字的实际占格（半格数）——拉丁成段后字符数≠占格数
   const cellsFor = (scale: number) => Math.max(2, Math.ceil(scale * 2));
   const spanOfText = (text: string, scale = 1) =>
-    segmentLatin(text)
-      .filter((seg) => seg.s.trim())
-      .reduce(
-        (n, seg) =>
-          n + (seg.latin ? latinSpan(seg.s.length).hSpan : cellsFor(scale)),
-        0,
-      );
+    segmentLatin(text).reduce(
+      (n, seg) =>
+        !seg.s.trim()
+          ? n + (seg.s === '\u3000' ? 2 : 1)
+          : n + (seg.latin ? latinSpan(seg.s.length).hSpan : cellsFor(scale)),
+      0,
+    );
 
   // 按 run 排（篇题/题署行支持行内字号与拉丁成段）；不换列，截断保护
   const runSpan = (r: Run, baseScale: number) =>
@@ -69,9 +69,15 @@ export function layout(
           baseScale * SIZE[r.t === 'text' ? (r.size ?? 'body') : 'body'].scale,
         );
   const spanOfRuns = (runs: Run[], baseScale = 1) =>
-    runs
-      .filter((r) => r.t === 'text' || r.t === 'latin')
-      .reduce((n, r) => n + runSpan(r, baseScale), 0);
+    runs.reduce(
+      (n, r) =>
+        r.t === 'space'
+          ? n + r.halves
+          : r.t === 'text' || r.t === 'latin'
+            ? n + runSpan(r, baseScale)
+            : n,
+      0,
+    );
   const placeRuns = (
     runs: Run[],
     atCol: number,
@@ -81,6 +87,10 @@ export function layout(
   ) => {
     let h = startHalf;
     for (const r of runs) {
+      if (r.t === 'space') {
+        h += r.halves;
+        continue;
+      }
       if (r.t !== 'text' && r.t !== 'latin') continue; // 题名列不排夹注/句读
       const hSpan = runSpan(r, baseScale);
       if (h + hSpan > HMAX) break;
@@ -109,7 +119,10 @@ export function layout(
   ) => {
     let h = startHalf;
     for (const seg of segmentLatin(text)) {
-      if (!seg.s.trim()) continue; // 空白不占格
+      if (!seg.s.trim()) {
+        h += seg.s === '\u3000' ? 2 : 1; // 空格留白
+        continue;
+      }
       const { hSpan, upright } = seg.latin
         ? latinSpan(seg.s.length)
         : { hSpan: cellsFor(scale), upright: false };
@@ -197,6 +210,9 @@ export function layout(
         lastBig = o;
         half += hSpan;
         if (half % 2) half++; // 其后正文回字位
+      } else if (r.t === 'space') {
+        half += r.halves;
+        if (half >= HMAX) advanceCol();
       } else if (r.t === 'punct') {
         if (lastBig) lastBig.punct = r.kind;
       } else {

@@ -266,6 +266,18 @@ describe('布局引擎', () => {
     );
   });
 
+  it('空格占位：半角半字位、全角一字位；抬头留白生效', () => {
+    const g = { cols: 10, charsPerCol: 17 };
+    const at = (src: string, ch: string) =>
+      layout(parse(src), meta, g)[0]!.chars.find(
+        (c) => c.ch === ch && !c.role,
+      )!;
+    expect(at('甲乙', '乙').half).toBe(2);
+    expect(at('甲 乙', '乙').half).toBe(4); // 半角：2+1，正文回字位 → 4
+    expect(at('甲\u3000乙', '乙').half).toBe(4); // 全角一字位：2+2
+    expect(at('\u3000\u3000甲', '甲').half).toBe(4); // 抬头空两格
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);
