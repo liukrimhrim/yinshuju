@@ -54,11 +54,17 @@ export const latinWidthEm = (s: string) =>
 // 纵向一半格 ≈ 字号 / (2×纵向字面率)；以名义 0.8 折算，渲染端再以 textLength 只压不拉
 const HALVES_PER_EM = 1.6;
 
-/** 拉丁段占格：≤3 字符縦中横压入一字位（无余量，中西间距最紧）；更长转横排 */
-export function latinSpan(s: string): { hSpan: number; upright: boolean } {
+/**
+ * 拉丁段占格：≤3 字符縦中横压入一字位（无余量，中西间距最紧）；更长转横排。
+ * scale＝该列/该段的字号倍率——字号越小，自然宽度越窄，占格须同比收缩。
+ */
+export function latinSpan(
+  s: string,
+  scale = 1,
+): { hSpan: number; upright: boolean } {
   if ([...s].length <= 3) return { hSpan: 2, upright: true };
   return {
-    hSpan: Math.max(2, Math.round(latinWidthEm(s) * HALVES_PER_EM)),
+    hSpan: Math.max(2, Math.round(latinWidthEm(s) * HALVES_PER_EM * scale)),
     upright: false,
   };
 }

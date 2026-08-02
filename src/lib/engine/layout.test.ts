@@ -190,7 +190,11 @@ describe('布局引擎', () => {
     const ds = author.find((c) => c.ch === 'DeepSeek')!;
     expect(ds.kind).toBe('latin');
     expect(ds.upright).toBeFalsy(); // 长段转横排
-    expect(ds.hSpan).toBe(7); // DeepSeek 自然宽度约 4.3em
+    // 占格随列基准字号缩放：4.36em × 1.6 × 0.85（著者列）≈ 6 半格
+    expect(ds.hSpan).toBe(6);
+    // 同一段在 1× 的书名列则占 7 半格
+    const p1 = layout(parse('文'), { ...m, title: 'DeepSeek' }, grid)[0]!;
+    expect(p1.chars.find((c) => c.ch === 'DeepSeek')!.hSpan).toBe(7);
   });
 
   it('著者列按实际占格倒推起点：末尾恒留两字位给印章（含拉丁段）', () => {

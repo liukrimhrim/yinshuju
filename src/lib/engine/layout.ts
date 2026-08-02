@@ -89,13 +89,17 @@ export function layout(
   // 特殊列文字的实际占格（半格数）——拉丁成段后字符数≠占格数
   const cellsFor = (scale: number) => Math.max(2, Math.ceil(scale * 2));
   // 按 run 排（篇题/题署行支持行内字号与拉丁成段）；不换列，截断保护
+  // 实际字号倍率＝列基准 × 行内字号标记
+  const effScale = (r: Run, baseScale: number) =>
+    baseScale *
+    scaleOf(
+      r.t === 'text' || r.t === 'latin' ? (r.size ?? 'body') : 'body',
+      sizes,
+    );
   const runSpan = (r: Run, baseScale: number) =>
     r.t === 'latin'
-      ? latinSpan(r.s).hSpan
-      : cellsFor(
-          baseScale *
-            scaleOf(r.t === 'text' ? (r.size ?? 'body') : 'body', sizes),
-        );
+      ? latinSpan(r.s, effScale(r, baseScale)).hSpan
+      : cellsFor(effScale(r, baseScale));
   const spanOfRuns = (runs: Run[], baseScale = 1) =>
     runs.reduce((n, r) => {
       if (r.t === 'space') return n + r.halves;
@@ -146,16 +150,17 @@ export function layout(
         if (h % 2) h++; // 注毕回字位
         continue;
       }
+      const eff = effScale(r, baseScale);
       const hSpan = runSpan(r, baseScale);
       if (h + hSpan > hMax) break;
-      const upright = r.t === 'latin' && latinSpan(r.s).upright;
+      const upright = r.t === 'latin' && latinSpan(r.s, eff).upright;
       const placed: PlacedChar = {
         kind: r.t === 'latin' ? 'latin' : 'big',
         ch: r.s,
         col: atCol,
         half: h,
         hSpan,
-        scale: baseScale * scaleOf(r.size ?? 'body', sizes),
+        scale: eff,
         role,
         ...(upright ? { upright: true } : {}),
       };
@@ -240,8 +245,8 @@ export function layout(
         lastBig = o;
         half += hSpan;
       } else if (r.t === 'latin') {
-        const { hSpan, upright } = latinSpan(r.s);
         const scale = scaleOf(r.size ?? 'body', sizes);
+        const { hSpan, upright } = latinSpan(r.s, scale);
         if (half % 2) half++;
         // 占奇数半格时，回字位的补白前后均分（否则全落在段后，中西间距一边大一边小）
         const odd = hSpan % 2 === 1;
