@@ -101,30 +101,34 @@ function parsePara(b: string): Run[] {
 }
 
 export function parse(src: string): Block[] {
-  const trimmed = src.trim();
-  if (!trimmed) return [];
+  const trimmed = src.replace(/^\n+|\n+$/g, '');
+  if (!trimmed.trim()) return [];
   const blocks: Block[] = [];
-  for (const raw of trimmed.split(/\n\s*\n/)) {
-    // 篇题按「行」判定（markup v1：# 开头的行），块内其余行合为一段
-    let paraLines: string[] = [];
-    const flush = () => {
-      if (paraLines.length) {
-        blocks.push({ type: 'para', runs: parsePara(paraLines.join('\n')) });
-        paraLines = [];
-      }
-    };
-    for (const line of raw.split('\n')) {
-      if (line.trim().startsWith('#')) {
-        flush();
-        blocks.push({
-          type: 'chapter',
-          text: line.trim().replace(/^#+\s*/, ''),
-        });
-      } else {
-        paraLines.push(line);
-      }
+  let paraLines: string[] = [];
+  let blankRun = 0;
+  const flush = () => {
+    if (paraLines.length) {
+      blocks.push({ type: 'para', runs: parsePara(paraLines.join('\n')) });
+      paraLines = [];
     }
-    flush();
+  };
+  for (const line of trimmed.split('\n')) {
+    if (!line.trim()) {
+      flush();
+      blankRun++;
+      continue;
+    }
+    // 连续空行：第一个只作分段（提行），其余每个空一列
+    for (let i = 1; i < blankRun; i++) blocks.push({ type: 'blank' });
+    blankRun = 0;
+    if (line.trim().startsWith('#')) {
+      flush();
+      blocks.push({ type: 'chapter', text: line.trim().replace(/^#+\s*/, '') });
+    } else {
+      paraLines.push(line);
+    }
   }
+  flush();
+  for (let i = 1; i < blankRun; i++) blocks.push({ type: 'blank' }); // 末尾空行亦生效
   return blocks;
 }

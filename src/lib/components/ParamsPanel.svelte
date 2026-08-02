@@ -163,6 +163,33 @@
   </section>
 
   <section>
+    <div class="row">
+      <div>
+        <label for="p-ts">书名字号 {app.titleScale.toFixed(2)}×</label>
+        <input
+          id="p-ts"
+          type="range"
+          min="0.8"
+          max="2"
+          step="0.05"
+          bind:value={app.titleScale}
+        />
+      </div>
+      <div>
+        <label for="p-as">著者字号 {app.authorScale.toFixed(2)}×</label>
+        <input
+          id="p-as"
+          type="range"
+          min="0.6"
+          max="1.5"
+          step="0.05"
+          bind:value={app.authorScale}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section>
     <label class="check">
       <input type="checkbox" bind:checked={app.showFolio} />
       版心印页码

@@ -14,7 +14,7 @@ import {
 import type { Meta } from './engine/types';
 import { DEMO_META, DEMO_TEXT } from './demo';
 import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
-import { loadS2T, highRiskChars } from './convert';
+import { highRiskChars } from './convert';
 import { pageGeo } from './engine/svg';
 import type { Font } from 'opentype.js';
 
@@ -38,7 +38,9 @@ class AppState {
   fishtailStyle = $state<FishtailSpec['style']>('black');
   fishtailPairing = $state<FishtailSpec['pairing']>('opposed');
   convertS2T = $state(false); // 简→繁（s2t）
-  converted = $state(''); // 转换结果（异步填充）
+  s2t = $state<((s: string) => string) | null>(null); // 转换器（懒加载后填入）
+  titleScale = $state(1.3); // 书名字号倍率（卷端题名多大于正文）
+  authorScale = $state(0.85);
   pageIdx = $state(0);
   seals = $state<SealSpec[]>([]); // 默认无印——避免首访即拉 21.8MB 篆书字体
   sealFont = $state<Font | null>(null);
@@ -46,9 +48,19 @@ class AppState {
   private sealFontRequested = false;
 
   // 生效正文：开简繁则用转换结果（未就绪时暂用原文）
-  effectiveText = $derived(
-    this.convertS2T && this.converted ? this.converted : this.text,
-  );
+  private conv = $derived(this.convertS2T && this.s2t ? this.s2t : null);
+  effectiveText = $derived(this.conv ? this.conv(this.text) : this.text);
+  // 简繁转换同样作用于书名/著者/版心（原先只转正文）
+  effectiveMeta = $derived.by(() => {
+    const c = this.conv;
+    if (!c) return this.meta;
+    return {
+      title: c(this.meta.title),
+      author: c(this.meta.author),
+      banxinTitle: c(this.meta.banxinTitle),
+      banxinJuan: c(this.meta.banxinJuan),
+    };
+  });
   highRisk = $derived(this.convertS2T ? highRiskChars(this.text) : []);
 
   ensureSealFont() {
@@ -61,10 +73,13 @@ class AppState {
     THEMES.find((t) => t.id === this.themeId) ?? THEMES[0]!,
   );
   pages = $derived(
-    layout(parse(this.effectiveText), this.meta, {
-      cols: this.cols,
-      charsPerCol: this.charsPerCol,
-    }),
+    layout(
+      parse(this.effectiveText),
+      this.effectiveMeta,
+      { cols: this.cols, charsPerCol: this.charsPerCol },
+      this.titleScale,
+      this.authorScale,
+    ),
   );
   curIdx = $derived(Math.max(0, Math.min(this.pageIdx, this.pages.length - 1)));
   // 当前叶所在篇题（含之前页最后出现的）
@@ -119,7 +134,7 @@ class AppState {
   });
   sealMissing = $derived(this.sealLayer.missing);
   svg = $derived(
-    renderPage(this.pages[this.curIdx]!, this.meta, {
+    renderPage(this.pages[this.curIdx]!, this.effectiveMeta, {
       ...this.renderOpts,
       overlays:
         this.pages[this.curIdx]!.folio === 1 ? this.sealLayer.single : '',
@@ -130,7 +145,7 @@ class AppState {
     renderSpread(
       this.pages[this.curIdx]!,
       this.pages[this.curIdx + 1] ?? null,
-      this.meta,
+      this.effectiveMeta,
       {
         ...this.renderOpts,
         pageW: SPREAD_PAGE_W,
@@ -158,6 +173,8 @@ class AppState {
     'fishtailCount',
     'fishtailStyle',
     'fishtailPairing',
+    'titleScale',
+    'authorScale',
   ] as const;
 
   constructor() {
@@ -194,7 +211,7 @@ class AppState {
     let chapter: string | undefined;
     return this.pages.map((pg) => {
       for (const c of pg.chapters) chapter = c;
-      return renderPage(pg, this.meta, {
+      return renderPage(pg, this.effectiveMeta, {
         ...this.renderOpts,
         banxinChapter: this.banxinChapter ? chapter : undefined,
         overlays: pg.folio === 1 ? this.sealLayer.single : '',
@@ -206,7 +223,9 @@ class AppState {
     const { grid: _g, ...render } = this.renderOpts;
     return {
       text: this.effectiveText,
-      meta: this.meta,
+      meta: this.effectiveMeta,
+      titleScale: this.titleScale,
+      authorScale: this.authorScale,
       grid: { cols: this.cols, charsPerCol: this.charsPerCol },
       render,
       fontId: this.fontId,

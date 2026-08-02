@@ -43,7 +43,7 @@
   <textarea id="m-body" bind:value={app.text} spellcheck="false"></textarea>
   <p class="hint">
     （括号）＝双行夹注 · *小字* · **大字** · 《书名》［专名］｛圈注｝＜点注＞ ·
-    标点自动化作句读圈点 · 空行＝提行 · #行＝篇题
+    标点自动化作句读圈点 · 空行＝提行（多空一行＝空一列） · #行＝篇题
   </p>
   <div class="io">
     <button onclick={() => fileInput.click()}>导入 .txt</button>

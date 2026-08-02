@@ -429,7 +429,7 @@ function glyphs(
           markR: g.fs * 0.072,
         }
       : {
-          size: ch.role === 'author' ? g.fs * 0.85 : g.fs * (ch.scale ?? 1),
+          size: g.fs * (ch.scale ?? 1), // 书名/著者的倍率由 layout 写入
           fill: P.text,
           x: colX(ch.col) + g.colW / 2,
           y: centerY(ch),

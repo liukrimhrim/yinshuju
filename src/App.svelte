@@ -40,12 +40,7 @@
     if (app.seals.length) app.ensureSealFont();
   });
   $effect(() => {
-    if (!app.convertS2T) return;
-    const src = app.text;
-    loadS2T().then((conv) => {
-      // 仅当正文未再变时落盘，避免竞态旧结果覆盖
-      if (app.text === src) app.converted = conv(src);
-    });
+    if (app.convertS2T && !app.s2t) loadS2T().then((c) => (app.s2t = c));
   });
 </script>
 

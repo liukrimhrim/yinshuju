@@ -17,7 +17,13 @@ const SIZE: Record<CharSize | 'body', { hSpan: number; scale: number }> = {
 
 // 布局引擎：块 → 逐页网格坐标（col 右起 0，half 半格游标；大字占 2 半格）
 // 几何换算（px）不在此层，见 svg.ts
-export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
+export function layout(
+  blocks: Block[],
+  meta: Meta,
+  grid: GridParams,
+  titleScale = 1,
+  authorScale = 0.85,
+): Page[] {
   const HMAX = grid.charsPerCol * 2;
   const pages: Page[] = [];
   let cur: PlacedChar[] = [];
@@ -44,11 +50,13 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
     if (half > 0) advanceCol();
   };
   // 特殊列文字的实际占格（半格数）——拉丁成段后字符数≠占格数
-  const spanOfText = (text: string) =>
+  const cellsFor = (scale: number) => Math.max(2, Math.ceil(scale * 2));
+  const spanOfText = (text: string, scale = 1) =>
     segmentLatin(text)
       .filter((seg) => seg.s.trim())
       .reduce(
-        (n, seg) => n + (seg.latin ? latinSpan(seg.s.length).hSpan : 2),
+        (n, seg) =>
+          n + (seg.latin ? latinSpan(seg.s.length).hSpan : cellsFor(scale)),
         0,
       );
 
@@ -58,13 +66,14 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
     atCol: number,
     startHalf: number,
     role: PlacedChar['role'],
+    scale = 1,
   ) => {
     let h = startHalf;
     for (const seg of segmentLatin(text)) {
       if (!seg.s.trim()) continue; // 空白不占格
       const { hSpan, upright } = seg.latin
         ? latinSpan(seg.s.length)
-        : { hSpan: 2, upright: false };
+        : { hSpan: cellsFor(scale), upright: false };
       if (h + hSpan > HMAX) break;
       cur.push({
         kind: seg.latin ? 'latin' : 'big',
@@ -72,6 +81,7 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
         col: atCol,
         half: h,
         hSpan,
+        scale,
         role,
         ...(upright ? { upright: true } : {}),
       });
@@ -80,14 +90,21 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
   };
 
   // 卷首页：列0 书名顶格，列1 著者低格（距底留二格）
-  placeVert(meta.title, 0, 0, 'title');
+  placeVert(meta.title, 0, 0, 'title', titleScale);
   // 著者低格：末尾留两字位给印章，按实际占格倒推起点
-  const authorHalf = Math.max(2, HMAX - 4 - spanOfText(meta.author));
-  placeVert(meta.author, 1, authorHalf, 'author');
+  const authorHalf = Math.max(
+    2,
+    HMAX - 4 - spanOfText(meta.author, authorScale),
+  );
+  placeVert(meta.author, 1, authorHalf, 'author', authorScale);
   col = 2;
 
   for (const b of blocks) {
     freshCol();
+    if (b.type === 'blank') {
+      advanceCol(); // 空一列
+      continue;
+    }
     if (b.type === 'chapter') {
       curChapters.push(b.text);
       placeVert(b.text, col, 4, 'chapter'); // 低二格

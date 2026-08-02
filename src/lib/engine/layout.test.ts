@@ -194,6 +194,26 @@ describe('布局引擎', () => {
     }
   });
 
+  it('多空一行＝空一列：两空行空一列、三空行空两列', () => {
+    const colOf = (src: string, ch: string) =>
+      layout(parse(src), meta, grid)[0]!.chars.find(
+        (c) => c.ch === ch && !c.role,
+      )!.col;
+    expect(colOf('甲\n\n乙', '乙') - colOf('甲\n\n乙', '甲')).toBe(1); // 提行
+    expect(colOf('甲\n\n\n乙', '乙') - colOf('甲\n\n\n乙', '甲')).toBe(2); // 空一列
+    expect(colOf('甲\n\n\n\n乙', '乙') - colOf('甲\n\n\n\n乙', '甲')).toBe(3);
+  });
+
+  it('书名/著者字号倍率可调，占格随之放大', () => {
+    const p = layout(parse('文'), meta, grid, 1.4, 0.85)[0]!;
+    const title = p.chars.filter((c) => c.role === 'title');
+    expect(title[0]!.scale).toBe(1.4);
+    expect(title[0]!.hSpan).toBe(3); // ceil(1.4*2)=3 半格，字面不叠
+    const author = p.chars.filter((c) => c.role === 'author');
+    expect(author[0]!.scale).toBe(0.85);
+    expect(author[0]!.hSpan).toBe(2);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

@@ -158,6 +158,8 @@ export interface ExportContext {
   fontId: FontId;
   seals: SealSpec[];
   uploadData: ArrayBuffer | null;
+  titleScale: number;
+  authorScale: number;
 }
 
 export function planFor(
@@ -166,7 +168,13 @@ export function planFor(
   sealFont?: Font | null,
 ) {
   const plan = computeLayoutPlan(ratio, ctx.grid);
-  const pages = layout(parse(ctx.text), ctx.meta, plan.grid);
+  const pages = layout(
+    parse(ctx.text),
+    ctx.meta,
+    plan.grid,
+    ctx.titleScale,
+    ctx.authorScale,
+  );
   const opts: RenderOptions = {
     ...ctx.render,
     grid: plan.grid,
