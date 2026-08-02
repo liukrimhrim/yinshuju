@@ -190,21 +190,23 @@ describe('SVG 渲染', () => {
     // 黑尾：实心直叉（L 命令，无 Q）
     const black = ft('black');
     expect(black).toMatch(/<path d="M[^"]*L[^"]*" fill="#/);
-    expect(/<path d="M[^"]*C[^"]*Z" fill="#/.test(black)).toBe(false);
+    expect(/<path d="M[^"]*Q[^"]*Z" fill="#/.test(black)).toBe(false); // 黑尾直叉
+    expect(black).toMatch(/<path d="M[\d.-]+,[\d.]+L[^"]*" fill="none"/); // 回声细线
 
     // 白尾：仅描边不填
     expect(ft('white')).toMatch(/<path d="M[^"]*" fill="none" stroke="#/);
 
-    // 花尾：分叉处为 S 曲线（C 命令）、实心、无内饰划痕
+    // 花尾：波浪云头叉（Q 命令）+ 每侧两片纸色叶饰
     const flower = ft('flower');
     const paper = THEMES.find((x) => x.id === 'zhusilan')!.palette.paper;
-    expect(flower).toMatch(/<path d="M[^"]*C[^"]*Z" fill="#/);
-    expect(flower).not.toContain(`stroke="${paper}"`);
+    expect(flower).toMatch(/<path d="M[^"]*Q[^"]*Z" fill="#/);
+    expect((flower.match(/<ellipse[^>]*rotate/g) ?? []).length).toBe(4);
+    expect(flower).toContain(`fill="${paper}"`);
 
     // 线尾：外轮廓 + 两道内嵌叉线，均描边不填充
     const line = ft('line');
     expect(line).toMatch(/<path d="M[^"]*Z" fill="none" stroke="#/); // 轮廓
-    expect((line.match(/<path[^>]*stroke-width="1.1"/g) ?? []).length).toBe(2); // 内嵌两道（版框内线是 line 不计）
+    expect((line.match(/<path[^>]*stroke-width="1.2"/g) ?? []).length).toBe(2); // 内嵌两道
     expect(/<path d="M[^"]*Z" fill="#/.test(line)).toBe(false); // 无实心块
   });
 

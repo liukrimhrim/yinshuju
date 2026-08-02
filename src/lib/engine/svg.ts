@@ -181,29 +181,76 @@ function vertText(
 }
 
 // 版心内容（鱼尾 + 简名卷次 + 页码），中心线在 cx；单叶模式配合 clip 只露右半
-// 分叉线：从左尾尖经中央凹口到右尾尖。curved=花鱼尾的曲线叉（规范：分叉处为曲线者为花鱼尾）
-function forkPath(
+// 叉口线段（不含起点 M，起点为右尾尖）：右尾尖 → 中央尖峰 → 左尾尖
+// wavy=花鱼尾的云头波浪叉
+function forkSegs(
   cx: number,
   w: number,
-  yBase: number, // 尾尖所在水平线
-  notch: number, // 凹口深（朝 dir 反向）
-  dir: 1 | -1, // 1=尾尖朝下
-  curved: boolean,
+  yBase: number,
+  notch: number,
+  dir: 1 | -1,
+  wavy: boolean,
 ): string {
-  const apex = yBase - dir * notch;
-  const left = cx - w / 2;
-  const right = cx + w / 2;
-  if (!curved) return `M${left},${yBase} L${cx},${apex} L${right},${yBase}`;
-  // 花鱼尾：S 形（如意）曲线叉——近尾尖处平缓、近中缝陡起
-  const near = (yBase - dir * notch * 0.1).toFixed(1);
-  const far = (apex + dir * notch * 0.22).toFixed(1);
+  const peakY = yBase - dir * notch;
+  const LOBES = 2; // 每侧两段起伏：保住 ∧ 轮廓与中央尖峰
+  const half = (fx: number, fy: number, tx: number, ty: number) => {
+    if (!wavy) return `L${tx.toFixed(1)},${ty.toFixed(1)}`;
+    let out = '';
+    for (let i = 0; i < LOBES; i++) {
+      const p0x = fx + ((tx - fx) * i) / LOBES;
+      const p0y = fy + ((ty - fy) * i) / LOBES;
+      const p1x = fx + ((tx - fx) * (i + 1)) / LOBES;
+      const p1y = fy + ((ty - fy) * (i + 1)) / LOBES;
+      const dx = p1x - p0x;
+      const dy = p1y - p0y;
+      const len = Math.hypot(dx, dy) || 1;
+      const amp = notch * 0.085 * (i % 2 ? -1 : 1); // 幅度克制，仅作云头感
+      out += `Q${(p0x + dx / 2 - (dy / len) * amp).toFixed(1)},${(p0y + dy / 2 + (dx / len) * amp).toFixed(1)} ${p1x.toFixed(1)},${p1y.toFixed(1)}`;
+    }
+    return out;
+  };
   return (
-    `M${left},${yBase} C${(cx - w * 0.34).toFixed(1)},${near} ${(cx - w * 0.14).toFixed(1)},${far} ${cx},${apex.toFixed(1)}` +
-    ` C${(cx + w * 0.14).toFixed(1)},${far} ${(cx + w * 0.34).toFixed(1)},${near} ${right},${yBase}`
+    half(cx + w / 2, yBase, cx, peakY) + half(cx, peakY, cx - w / 2, yBase)
   );
 }
 
-// 一枚鱼尾：tipsUp=false 尾尖朝下（常式），true 为镜像（对鱼尾的下尾）
+// 独立的一道叉线（含起点）
+const forkLine = (
+  cx: number,
+  w: number,
+  yBase: number,
+  notch: number,
+  dir: 1 | -1,
+  wavy: boolean,
+) =>
+  `M${(cx + w / 2).toFixed(1)},${yBase.toFixed(1)}` +
+  forkSegs(cx, w, yBase, notch, dir, wavy);
+
+// 花鱼尾的白叶饰：每侧两片，对称排在带内（范例：黑带上留白叶）
+function leaves(
+  cx: number,
+  w: number,
+  yHead: number,
+  depth: number,
+  dir: 1 | -1,
+  P: Palette,
+): string {
+  const rx = w * 0.055;
+  const ry = w * 0.024;
+  let out = '';
+  for (const side of [-1, 1] as const)
+    for (const [kx, ky, rot] of [
+      [0.17, 0.26, 32],
+      [0.3, 0.4, 58],
+    ] as const) {
+      const x = cx + side * w * kx;
+      const y = yHead + dir * depth * ky;
+      out += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="${P.paper}" transform="rotate(${side * rot} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
+    }
+  return out;
+}
+
+// 一枚鱼尾：扁带状，叉口几乎切穿整带（范例形制）。tipsUp=对鱼尾的下尾（镜像）
 function fishtail(
   cx: number,
   yTop: number,
@@ -215,34 +262,36 @@ function fishtail(
   P: Palette,
 ): string {
   const dir: 1 | -1 = tipsUp ? -1 : 1;
-  const yHead = tipsUp ? yTop + depth : yTop; // 平头一侧
+  const yHead = tipsUp ? yTop + depth : yTop; // 平头一侧（贴象鼻界线）
   const yBase = tipsUp ? yTop : yTop + depth; // 尾尖一侧
   const left = cx - w / 2;
   const right = cx + w / 2;
-  const curved = style === 'flower';
-  // 轮廓 = 平头 + 两侧 + 分叉
+  const wavy = style === 'flower';
   const body =
     `M${left},${yHead} H${right} V${yBase} ` +
-    forkPath(cx, w, yBase, notch, dir, curved).replace(
-      /^M[\d.-]+,[\d.-]+ /,
-      '',
-    ) +
-    ` L${left},${yHead} Z`;
+    forkSegs(cx, w, yBase, notch, dir, wavy) +
+    ` Z`;
+  // 象鼻界线：鱼尾平头外一道细横线
+  const ruleY = yHead - dir * depth * 0.18;
+  const headRule = `<line x1="${left}" y1="${ruleY.toFixed(1)}" x2="${right}" y2="${ruleY.toFixed(1)}" stroke="${P.frame}" stroke-width="1.2"/>`;
 
-  if (style === 'white')
-    return `<path d="${body}" fill="none" stroke="${P.frame}" stroke-width="1.6"/>`;
-
-  if (style === 'line') {
-    // 线鱼尾：由若干线条组成——外轮廓 + 两道内嵌同形叉线（间距紧凑，整体仍读作一枚鱼尾）
-    let out = `<path d="${body}" fill="none" stroke="${P.frame}" stroke-width="1.4"/>`;
-    for (const k of [0.17, 0.34])
-      out += `<path d="${forkPath(cx, w * (1 - k * 0.55), yBase - dir * depth * k, notch * (1 - k * 0.75), dir, false)}" fill="none" stroke="${P.frame}" stroke-width="1.1"/>`;
+  if (style === 'white' || style === 'line') {
+    // 白鱼尾＝空心叉带（外廓+一道内线）；线鱼尾＝多道内线
+    const inner = style === 'line' ? [0.3, 0.56] : [0.34];
+    let out =
+      headRule +
+      `<path d="${body}" fill="none" stroke="${P.frame}" stroke-width="1.5"/>`;
+    for (const k of inner)
+      out += `<path d="${forkLine(cx, w * (1 - k * 0.16), yBase - dir * depth * k, notch * (1 - k * 0.5), dir, wavy)}" fill="none" stroke="${P.frame}" stroke-width="1.2"/>`;
     return out;
   }
 
-  // 黑鱼尾（直叉）与花鱼尾（S 曲线叉）皆实心；花的装饰性全在叉的轮廓，
-  // 不加内饰——半叶只露半枚鱼尾时，内饰会退化成一道斜划痕。
-  return `<path d="${body}" fill="${P.frame}"/>`;
+  let out = headRule + `<path d="${body}" fill="${P.frame}"/>`;
+  if (style === 'flower') out += leaves(cx, w, yHead, depth, dir, P);
+  else
+    // 黑鱼尾：叉口外再回一道细线（刻本常见的回声线）
+    out += `<path d="${forkLine(cx, w, yBase + dir * depth * 0.3, notch * 0.92, dir, false)}" fill="none" stroke="${P.frame}" stroke-width="1.3"/>`;
+  return out;
 }
 
 function banxinAt(
@@ -254,8 +303,8 @@ function banxinAt(
   chapter?: string,
   ft: FishtailSpec = DEFAULT_FISHTAIL,
 ): string {
-  const ftDepth = g.colW * 0.6; // 鱼尾总深
-  const ftNotch = g.colW * 0.42; // 尾尖凹口深
+  const ftDepth = g.colW * 0.44; // 鱼尾带高（范例为扁带，非高块）
+  const ftNotch = ftDepth * 0.86; // 叉口几乎切穿整带，两侧只余细尖
   const yF = g.fy0 + FISHTAIL_POS * g.frameH;
   const yLower = g.fy0 + LOWER_FISHTAIL_POS * g.frameH;
   let out = fishtail(cx, yF, g.colW, ftDepth, ftNotch, false, ft.style, P);
