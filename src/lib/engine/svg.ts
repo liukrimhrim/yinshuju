@@ -164,18 +164,19 @@ function buildDefs(g: Geo, o: RenderOptions, seed: number): string {
   </defs>`;
 }
 
-// 读（丶）：毛笔「点」——露锋起笔尖细在左上，行笔按下渐肥，收笔圆钝于右下
-function douStroke(x: number, y: number, h: number, fill: string): string {
-  const w = h * 0.66;
-  const x0 = x - w * 0.45; // 视觉重心对齐锚点
-  const y0 = y - h * 0.5;
+// 读（丶）：毛笔「点」——横卧笔势，左端露锋起笔尖细，右端按笔肥厚圆钝
+function douStroke(x: number, y: number, len: number, fill: string): string {
+  const th = len * 0.52; // 笔画厚度
+  const x0 = x - len * 0.42; // 重心落在锚点
+  const y0 = y;
   const P = (dx: number, dy: number) =>
-    `${(x0 + w * dx).toFixed(1)},${(y0 + h * dy).toFixed(1)}`;
+    `${(x0 + len * dx).toFixed(1)},${(y0 + th * dy).toFixed(1)}`;
   return (
     `<path d="M${P(0, 0)}` +
-    ` C${P(0.95, 0.14)} ${P(1.1, 0.56)} ${P(0.8, 0.92)}` + // 外缘：按笔渐肥
-    ` C${P(0.52, 1.13)} ${P(0.08, 0.98)} ${P(0.03, 0.52)}` + // 收笔圆钝
-    ` C${P(0.01, 0.3)} ${P(0, 0.13)} ${P(0, 0)} Z" fill="${fill}"/>` // 内缘回锋至尖
+    ` C${P(0.42, -0.34)} ${P(0.8, -0.5)} ${P(1, -0.06)}` + // 上缘：起笔尖 → 按笔
+    ` C${P(1.05, 0.34)} ${P(0.74, 0.55)} ${P(0.44, 0.4)}` + // 右端圆钝回锋
+    ` C${P(0.24, 0.29)} ${P(0.09, 0.14)} ${P(0, 0)} Z"` + // 下缘收回尖端
+    ` fill="${fill}" transform="rotate(24 ${x.toFixed(1)} ${y.toFixed(1)})"/>` // 顺笔势右下倾
   );
 }
 
@@ -439,7 +440,7 @@ function glyphs(
       acc.marks +=
         ch.punct === 'ju'
           ? `<circle cx="${m.markX}" cy="${my}" r="${m.markR.toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="1.5"/>`
-          : douStroke(m.markX, my, m.markR * 2.9, P.mark); // 点高≈句圈直径 1.5 倍
+          : douStroke(m.markX, my, m.markR * 2.8, P.mark); // 点长≈句圈直径 1.4 倍
     }
   }
 }
