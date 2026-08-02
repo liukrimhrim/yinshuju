@@ -193,8 +193,13 @@ describe('SVG 渲染', () => {
     expect(/<path d="M[^"]*Q[^"]*Z" fill="#/.test(black)).toBe(false); // 黑尾直叉
     expect(black).toMatch(/<path d="M[\d.-]+,[\d.]+L[^"]*" fill="none"/); // 回声细线
 
-    // 白尾：仅描边不填
-    expect(ft('white')).toMatch(/<path d="M[^"]*" fill="none" stroke="#/);
+    // 白尾＝黑尾不着墨：无填充块，只有叉线+回声线
+    const white = ft('white');
+    expect(/<path d="M[^"]*Z" fill="#/.test(white)).toBe(false);
+    expect(
+      (white.match(/<path d="M[\d.-]+,[\d.]+[LQ][^"]*" fill="none"/g) ?? [])
+        .length,
+    ).toBe(2); // 叉线 + 回声线
 
     // 花尾：波浪云头叉（Q 命令）+ 每侧两片纸色叶饰
     const flower = ft('flower');
@@ -203,11 +208,13 @@ describe('SVG 渲染', () => {
     expect((flower.match(/<ellipse[^>]*rotate/g) ?? []).length).toBe(4);
     expect(flower).toContain(`fill="${paper}"`);
 
-    // 线尾：外轮廓 + 两道内嵌叉线，均描边不填充
+    // 线尾：三道层叠叉线 + 回声线，均不填充
     const line = ft('line');
-    expect(line).toMatch(/<path d="M[^"]*Z" fill="none" stroke="#/); // 轮廓
-    expect((line.match(/<path[^>]*stroke-width="1.2"/g) ?? []).length).toBe(2); // 内嵌两道
     expect(/<path d="M[^"]*Z" fill="#/.test(line)).toBe(false); // 无实心块
+    expect(
+      (line.match(/<path d="M[\d.-]+,[\d.]+[LQ][^"]*" fill="none"/g) ?? [])
+        .length,
+    ).toBe(3); // 三道叉线
   });
 
   it('toCnNum：一位/十位/两位', () => {

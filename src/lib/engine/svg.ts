@@ -192,20 +192,18 @@ function forkSegs(
   wavy: boolean,
 ): string {
   const peakY = yBase - dir * notch;
-  const LOBES = 2; // 每侧两段起伏：保住 ∧ 轮廓与中央尖峰
+  // 花鱼尾：每侧三枚同向下垂的弧（云头/贝叶），端点精确故中央尖峰保持锐利
+  const LOBES = 4; // 弧数多而浅，成细密云头
   const half = (fx: number, fy: number, tx: number, ty: number) => {
     if (!wavy) return `L${tx.toFixed(1)},${ty.toFixed(1)}`;
     let out = '';
+    const amp = notch * 0.115;
     for (let i = 0; i < LOBES; i++) {
       const p0x = fx + ((tx - fx) * i) / LOBES;
       const p0y = fy + ((ty - fy) * i) / LOBES;
       const p1x = fx + ((tx - fx) * (i + 1)) / LOBES;
       const p1y = fy + ((ty - fy) * (i + 1)) / LOBES;
-      const dx = p1x - p0x;
-      const dy = p1y - p0y;
-      const len = Math.hypot(dx, dy) || 1;
-      const amp = notch * 0.085 * (i % 2 ? -1 : 1); // 幅度克制，仅作云头感
-      out += `Q${(p0x + dx / 2 - (dy / len) * amp).toFixed(1)},${(p0y + dy / 2 + (dx / len) * amp).toFixed(1)} ${p1x.toFixed(1)},${p1y.toFixed(1)}`;
+      out += `Q${((p0x + p1x) / 2).toFixed(1)},${((p0y + p1y) / 2 + dir * amp).toFixed(1)} ${p1x.toFixed(1)},${p1y.toFixed(1)}`;
     }
     return out;
   };
@@ -275,22 +273,28 @@ function fishtail(
   const ruleY = yHead - dir * depth * 0.18;
   const headRule = `<line x1="${left}" y1="${ruleY.toFixed(1)}" x2="${right}" y2="${ruleY.toFixed(1)}" stroke="${P.frame}" stroke-width="1.2"/>`;
 
-  if (style === 'white' || style === 'line') {
-    // 白鱼尾＝空心叉带（外廓+一道内线）；线鱼尾＝多道内线
-    const inner = style === 'line' ? [0.3, 0.56] : [0.34];
-    let out =
+  // 叉外回声细线：黑/白鱼尾共有（范例：叉口下再回一道同形线）
+  const echo = `<path d="${forkLine(cx, w, yBase + dir * depth * 0.3, notch * 0.92, dir, wavy)}" fill="none" stroke="${P.frame}" stroke-width="1.3"/>`;
+
+  if (style === 'white')
+    // 白鱼尾＝黑鱼尾不着墨：只留叉线与回声线（两侧竖边本就是版心界线，不重画）
+    return (
       headRule +
-      `<path d="${body}" fill="none" stroke="${P.frame}" stroke-width="1.5"/>`;
-    for (const k of inner)
-      out += `<path d="${forkLine(cx, w * (1 - k * 0.16), yBase - dir * depth * k, notch * (1 - k * 0.5), dir, wavy)}" fill="none" stroke="${P.frame}" stroke-width="1.2"/>`;
-    return out;
+      `<path d="${forkLine(cx, w, yBase, notch, dir, wavy)}" fill="none" stroke="${P.frame}" stroke-width="1.5"/>` +
+      echo
+    );
+
+  if (style === 'line') {
+    // 线鱼尾＝由若干线条组成：叉线自带内向上层叠成扇，另加回声线
+    let out = headRule;
+    for (const k of [0, 0.2, 0.4])
+      out += `<path d="${forkLine(cx, w, yBase - dir * depth * k, notch - depth * k * 0.45, dir, wavy)}" fill="none" stroke="${P.frame}" stroke-width="1.3"/>`;
+    return out; // 三道即足；再多则如军衔章
   }
 
   let out = headRule + `<path d="${body}" fill="${P.frame}"/>`;
   if (style === 'flower') out += leaves(cx, w, yHead, depth, dir, P);
-  else
-    // 黑鱼尾：叉口外再回一道细线（刻本常见的回声线）
-    out += `<path d="${forkLine(cx, w, yBase + dir * depth * 0.3, notch * 0.92, dir, false)}" fill="none" stroke="${P.frame}" stroke-width="1.3"/>`;
+  else out += echo;
   return out;
 }
 
