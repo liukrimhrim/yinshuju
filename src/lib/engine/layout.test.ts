@@ -214,6 +214,20 @@ describe('布局引擎', () => {
     expect(author[0]!.hSpan).toBe(2);
   });
 
+  it('--- 行＝分叶符：其后文字另起一叶，连续分叶符不产出空叶', () => {
+    const pages = layout(parse('甲\n\n---\n\n乙'), meta, grid);
+    expect(pages).toHaveLength(2);
+    expect(bigs(pages[0]!).map((c) => c.ch)).toEqual(['甲']);
+    expect(bigs(pages[1]!).map((c) => c.ch)).toEqual(['乙']);
+    expect(pages[1]!.folio).toBe(2);
+    expect(bigs(pages[1]!)[0]).toMatchObject({ col: 0, half: 0 }); // 次叶无书名列
+
+    // 连续分叶符 / 开头分叶符：不产生空叶
+    expect(
+      layout(parse('---\n\n甲\n\n---\n---\n\n乙'), meta, grid),
+    ).toHaveLength(2);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

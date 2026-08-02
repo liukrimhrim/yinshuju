@@ -101,6 +101,11 @@ export function layout(
 
   for (const b of blocks) {
     freshCol();
+    if (b.type === 'pagebreak') {
+      // 本叶已有正文才换叶，避免连续分叶符产出空叶
+      if (cur.some((c) => !c.role)) flushPage();
+      continue;
+    }
     if (b.type === 'blank') {
       advanceCol(); // 空一列
       continue;

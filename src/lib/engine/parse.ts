@@ -121,6 +121,11 @@ export function parse(src: string): Block[] {
     // 连续空行：第一个只作分段（提行），其余每个空一列
     for (let i = 1; i < blankRun; i++) blocks.push({ type: 'blank' });
     blankRun = 0;
+    if (/^-{3,}$/.test(line.trim())) {
+      flush();
+      blocks.push({ type: 'pagebreak' }); // 分叶符：其后文字另起一叶
+      continue;
+    }
     if (line.trim().startsWith('#')) {
       flush();
       blocks.push({ type: 'chapter', text: line.trim().replace(/^#+\s*/, '') });
