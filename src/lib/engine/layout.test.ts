@@ -143,7 +143,7 @@ describe('布局引擎', () => {
   });
 
   it('小字倍率过大时独占一字位（免上下相碰）', () => {
-    const p = layout(parse('甲*乙丙*丁'), meta, grid, 1, 0.85, undefined, {
+    const p = layout(parse('甲*乙丙*丁'), meta, grid, 1, 0.85, 1, undefined, {
       small: 0.85,
       large: 1.8,
     })[0]!;
@@ -318,7 +318,7 @@ describe('布局引擎', () => {
     const g = { cols: 10, charsPerCol: 17 };
     const HTOTAL = g.charsPerCol * 2;
     const first = (indent: { top: number; bottom: number }) =>
-      layout(parse('甲乙'), meta, g, 1, 0.85, indent)[0]!;
+      layout(parse('甲乙'), meta, g, 1, 0.85, 1, indent)[0]!;
 
     const none = first({ top: 0, bottom: 0 });
     expect(none.chars.find((c) => c.ch === '甲')!.half).toBe(0);
@@ -359,7 +359,7 @@ describe('布局引擎', () => {
 
   it('段落留白与全局留白并存：段落值覆盖全局', () => {
     const g = { cols: 10, charsPerCol: 17 };
-    const p = layout(parse('甲\n\n[0]乙'), meta, g, 1, 0.85, {
+    const p = layout(parse('甲\n\n[0]乙'), meta, g, 1, 0.85, 1, {
       top: 2,
       bottom: 0,
     })[0]!;
@@ -372,7 +372,7 @@ describe('布局引擎', () => {
     const g = { cols: 10, charsPerCol: 17 };
     const HTOTAL = g.charsPerCol * 2;
     const mk = (src: string, ind = {}) =>
-      layout(parse(src), meta, g, 1, 0.85, {
+      layout(parse(src), meta, g, 1, 0.85, 1, {
         top: 0,
         bottom: 0,
         ...ind,
@@ -400,6 +400,21 @@ describe('布局引擎', () => {
     expect(endOf(mk('> 甲'))).toBe(HTOTAL - 4);
     expect(endOf(mk('> 甲', { author: 3 }))).toBe(HTOTAL - 6);
     expect(endOf(mk('> [0]甲', { author: 3 }))).toBe(HTOTAL);
+  });
+
+  it('行内字号相对各列基准：篇题/题署基准不同则小字随之不同', () => {
+    const g = { cols: 10, charsPerCol: 17 };
+    const p = layout(parse('# *甲*\n> *乙*'), meta, g, 1, 0.85, 1.2)[0]!;
+    const ch = p.chars.find((c) => c.role === 'chapter')!;
+    const au = p.chars.find((c) => c.role === 'author' && c.col >= 2)!;
+    expect(ch.scale).toBeCloseTo(1.2 * 0.7, 5); // 篇题基准 1.2
+    expect(au.scale).toBeCloseTo(0.85 * 0.7, 5); // 题署基准 0.85
+    // 基准调等则小字亦等
+    const q = layout(parse('# *甲*\n> *乙*'), meta, g, 1, 0.85, 0.85)[0]!;
+    expect(q.chars.find((c) => c.role === 'chapter')!.scale).toBeCloseTo(
+      q.chars.find((c) => c.role === 'author' && c.col >= 2)!.scale!,
+      5,
+    );
   });
 
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {

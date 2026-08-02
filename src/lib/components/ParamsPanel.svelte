@@ -278,6 +278,17 @@
         />
       </div>
       <div>
+        <label for="p-cs">篇题字号 {app.chapterScale.toFixed(2)}×</label>
+        <input
+          id="p-cs"
+          type="range"
+          min="0.6"
+          max="2"
+          step="0.05"
+          bind:value={app.chapterScale}
+        />
+      </div>
+      <div>
         <label for="p-as">著者字号 {app.authorScale.toFixed(2)}×</label>
         <input
           id="p-as"

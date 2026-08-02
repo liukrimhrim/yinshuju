@@ -44,6 +44,7 @@ export function layout(
   grid: GridParams,
   titleScale = 1,
   authorScale = 0.85,
+  chapterScale = 1,
   indent: Indent = { top: 0, bottom: 0 },
   sizes: SizeScales = DEFAULT_SIZES,
 ): Page[] {
@@ -215,6 +216,7 @@ export function layout(
         col,
         hMin + Math.round((b.offset ?? indent.chapter ?? 2) * 2),
         'chapter',
+        chapterScale,
       );
       advanceCol();
       continue;

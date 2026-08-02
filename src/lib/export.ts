@@ -160,6 +160,7 @@ export interface ExportContext {
   uploadData: ArrayBuffer | null;
   titleScale: number;
   authorScale: number;
+  chapterScale: number;
   indent: { top: number; bottom: number; chapter?: number; author?: number };
   sizes: { small: number; large: number };
 }
@@ -176,6 +177,7 @@ export function planFor(
     plan.grid,
     ctx.titleScale,
     ctx.authorScale,
+    ctx.chapterScale,
     ctx.indent,
     ctx.sizes,
   );
