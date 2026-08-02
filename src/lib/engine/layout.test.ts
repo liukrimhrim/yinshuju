@@ -278,6 +278,25 @@ describe('布局引擎', () => {
     expect(at('\u3000\u3000甲', '甲').half).toBe(4); // 抬头空两格
   });
 
+  it('书名/著者栏支持 *小* **大** 标记，其余字符原样保留', () => {
+    const m: Meta = {
+      ...meta,
+      title: '**鬼谷子**（校注）',
+      author: '戰國*鬼谷子*撰',
+    };
+    const p = layout(parse('文'), m, grid, 1, 0.85)[0]!;
+    const title = p.chars.filter((c) => c.role === 'title');
+    expect(title.map((c) => c.ch).join('')).toBe('鬼谷子（校注）'); // 星号不入字、括号保留
+    expect(title.find((c) => c.ch === '鬼')!.scale).toBeGreaterThan(
+      title.find((c) => c.ch === '校')!.scale!,
+    );
+    const author = p.chars.filter((c) => c.role === 'author');
+    expect(author.map((c) => c.ch).join('')).toBe('戰國鬼谷子撰');
+    expect(author.find((c) => c.ch === '鬼')!.scale).toBeLessThan(
+      author.find((c) => c.ch === '戰')!.scale!,
+    );
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

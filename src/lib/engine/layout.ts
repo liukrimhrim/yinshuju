@@ -52,7 +52,7 @@ export function layout(
   };
   // 特殊列文字的实际占格（半格数）——拉丁成段后字符数≠占格数
   const cellsFor = (scale: number) => Math.max(2, Math.ceil(scale * 2));
-  const spanOfText = (text: string, scale = 1) =>
+  const spanOfSeg = (text: string, scale: number) =>
     segmentLatin(text).reduce(
       (n, seg) =>
         !seg.s.trim()
@@ -60,7 +60,11 @@ export function layout(
           : n + (seg.latin ? latinSpan(seg.s.length).hSpan : cellsFor(scale)),
       0,
     );
-
+  const spanOfText = (text: string, scale = 1) =>
+    splitSized(text).reduce(
+      (n, seg) => n + spanOfSeg(seg.s, scale * SIZE[seg.size ?? 'body'].scale),
+      0,
+    );
   // 按 run 排（篇题/题署行支持行内字号与拉丁成段）；不换列，截断保护
   const runSpan = (r: Run, baseScale: number) =>
     r.t === 'latin'
@@ -109,6 +113,30 @@ export function layout(
     }
   };
 
+  // 元数据栏（书名/著者）只识别字号标记，其余字符（括号、间隔号等）原样保留
+  const splitSized = (text: string): { s: string; size?: CharSize }[] => {
+    const out: { s: string; size?: CharSize }[] = [];
+    let cur: CharSize | undefined;
+    let buf = '';
+    const flush = () => {
+      if (buf) out.push(cur ? { s: buf, size: cur } : { s: buf });
+      buf = '';
+    };
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === '*') {
+        const double = text[i + 1] === '*';
+        const want: CharSize = double ? 'large' : 'small';
+        flush();
+        cur = cur === want ? undefined : want;
+        i += double ? 1 : 0;
+        continue;
+      }
+      buf += text[i];
+    }
+    flush();
+    return out;
+  };
+
   // 书名/著者/篇题等特殊列：同样按拉丁成段规则排（不换列，截断保护）
   const placeVert = (
     text: string,
@@ -118,27 +146,29 @@ export function layout(
     scale = 1,
   ) => {
     let h = startHalf;
-    for (const seg of segmentLatin(text)) {
-      if (!seg.s.trim()) {
-        h += seg.s === '\u3000' ? 2 : 1; // 空格留白
-        continue;
+    for (const sized of splitSized(text))
+      for (const seg of segmentLatin(sized.s)) {
+        const segScale = scale * SIZE[sized.size ?? 'body'].scale;
+        if (!seg.s.trim()) {
+          h += seg.s === '\u3000' ? 2 : 1; // 空格留白
+          continue;
+        }
+        const { hSpan, upright } = seg.latin
+          ? latinSpan(seg.s.length)
+          : { hSpan: cellsFor(segScale), upright: false };
+        if (h + hSpan > HMAX) break;
+        cur.push({
+          kind: seg.latin ? 'latin' : 'big',
+          ch: seg.s,
+          col: atCol,
+          half: h,
+          hSpan,
+          scale: segScale,
+          role,
+          ...(upright ? { upright: true } : {}),
+        });
+        h += hSpan;
       }
-      const { hSpan, upright } = seg.latin
-        ? latinSpan(seg.s.length)
-        : { hSpan: cellsFor(scale), upright: false };
-      if (h + hSpan > HMAX) break;
-      cur.push({
-        kind: seg.latin ? 'latin' : 'big',
-        ch: seg.s,
-        col: atCol,
-        half: h,
-        hSpan,
-        scale,
-        role,
-        ...(upright ? { upright: true } : {}),
-      });
-      h += hSpan;
-    }
   };
 
   // 卷首页：列0 书名顶格，列1 著者低格（距底留二格）
