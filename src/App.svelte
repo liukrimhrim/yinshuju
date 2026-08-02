@@ -127,10 +127,10 @@
   }
   main {
     flex: 1;
+    min-height: 0;
     overflow: auto;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
   }
   .selftest {
     position: fixed;

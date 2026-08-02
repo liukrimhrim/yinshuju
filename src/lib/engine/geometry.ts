@@ -23,6 +23,28 @@ export function frameDims(pageW: number, pageH: number) {
 // 整叶（对开预览）画布宽 = 两个基准半叶
 export const SPREAD_PAGE_W = 2 * Math.round(BASE_PAGE_H * BASE_RATIO);
 
+export interface RatioPreset {
+  id: string;
+  label: string;
+  ratio: number;
+}
+
+// 各平台推荐像素随时变，故只固定比例、分辨率交给倍率（mvp-v1：不写死平台像素）
+export const RATIO_PRESETS: readonly RatioPreset[] = [
+  { id: 'base', label: '原开本 16:28', ratio: BASE_RATIO },
+  { id: 'wallpaper', label: '手机壁纸 9:19.5', ratio: 9 / 19.5 },
+  { id: 'r34', label: '竖幅 3:4', ratio: 3 / 4 },
+  { id: 'r45', label: '竖幅 4:5', ratio: 4 / 5 },
+  { id: 'square', label: '方形对开 1:1', ratio: 1 },
+  { id: 'wide', label: '横幅对开 2:1', ratio: 2 },
+] as const;
+
+/** 比例档 id（含自定义宽高）→ 比例值 */
+export function ratioOf(id: string, w: number, h: number): number {
+  if (id === 'custom') return Math.max(0.2, Math.min(4, w / Math.max(1, h)));
+  return RATIO_PRESETS.find((r) => r.id === id)?.ratio ?? BASE_RATIO;
+}
+
 export interface LayoutPlan {
   mode: 'single' | 'spread';
   pageW: number;

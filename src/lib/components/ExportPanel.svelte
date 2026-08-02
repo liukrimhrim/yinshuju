@@ -1,27 +1,17 @@
 <script lang="ts">
   import { app } from '../state.svelte';
-  import { RATIO_PRESETS, planFor, exportImage, exportPdf } from '../export';
+  import { exportImage, exportPdf } from '../export';
+  import { RATIO_PRESETS } from '../engine/geometry';
 
-  let ratioId = $state('base');
-  let customW = $state(16);
-  let customH = $state(28);
   let format = $state<'png' | 'jpeg'>('png');
   let quality = $state(0.92);
   let scale = $state(3);
-  let frameIdx = $state(0);
   let busy = $state(false);
   let status = $state('');
   let links = $state<{ name: string; url: string }[]>([]);
 
-  const ratio = $derived(
-    ratioId === 'custom'
-      ? Math.max(0.2, Math.min(4, customW / Math.max(1, customH)))
-      : (RATIO_PRESETS.find((r) => r.id === ratioId)?.ratio ?? 16 / 28),
-  );
-  const planned = $derived(planFor(app.exportCtx, ratio, app.sealFont));
-  const frameCount = $derived(planned.frames.length);
-  const safeFrame = $derived(Math.min(frameIdx, frameCount - 1));
-  const previewSvg = $derived(planned.svgAt(planned.frames[safeFrame]!));
+  // 预览即导出：画幅、行格、当前版全部取自预览
+  const frameCount = $derived(Math.ceil(app.pages.length / app.step));
 
   // 导出即存盘（与「导出 .txt」一致）；链接留着以便重下
   function addLink(name: string, blob: Blob) {
@@ -55,11 +45,11 @@
       const t0 = performance.now();
       const { blob, w, h, fontEmbedded } = await exportImage(
         app.exportCtx,
-        ratio,
-        planned.frames[safeFrame]!,
+        app.ratio,
+        app.curIdx,
         { format, quality, scale },
       );
-      const name = `${app.meta.banxinTitle || '印书局'}-${ratioId}.${format === 'png' ? 'png' : 'jpg'}`;
+      const name = `${app.meta.banxinTitle || '印书局'}-${app.ratioId}.${format === 'png' ? 'png' : 'jpg'}`;
       addLink(name, blob);
       status = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}${sealWarn()}`;
     });
@@ -91,48 +81,31 @@
 
 <div class="panel">
   <section>
-    <label for="e-ratio">画幅比例（自适应重排）</label>
-    <select id="e-ratio" bind:value={ratioId}>
+    <label for="e-ratio">画幅比例（预览同步重排）</label>
+    <select id="e-ratio" bind:value={app.ratioId}>
       {#each RATIO_PRESETS as r (r.id)}
         <option value={r.id}>{r.label}</option>
       {/each}
       <option value="custom">自定义</option>
     </select>
-    {#if ratioId === 'custom'}
+    {#if app.ratioId === 'custom'}
       <div class="row">
         <div>
           <label for="e-cw">宽</label>
-          <input id="e-cw" type="number" min="1" bind:value={customW} />
+          <input id="e-cw" type="number" min="1" bind:value={app.customW} />
         </div>
         <div>
           <label for="e-ch">高</label>
-          <input id="e-ch" type="number" min="1" bind:value={customH} />
+          <input id="e-ch" type="number" min="1" bind:value={app.customH} />
         </div>
       </div>
     {/if}
     <p class="hint">
-      {planned.plan.mode === 'spread' ? '对开整叶' : '单半叶'} ·
-      {planned.plan.grid.cols} 行 × {planned.plan.grid.charsPerCol} 字 · 共 {frameCount}
-      版
+      {app.plan.mode === 'spread' ? '对开整叶' : '单半叶'} ·
+      {app.plan.grid.cols} 行 × {app.plan.grid.charsPerCol} 字 · 共 {frameCount}
+      版（导出上方预览中的当前版）
     </p>
   </section>
-
-  <div class="thumb">{@html previewSvg}</div>
-  {#if frameCount > 1}
-    <div class="nav">
-      <button
-        disabled={safeFrame === 0}
-        onclick={() => (frameIdx = safeFrame - 1)}>‹</button
-      >
-      <span>{safeFrame + 1} / {frameCount}</span>
-      <button
-        disabled={safeFrame >= frameCount - 1}
-        onclick={() => (frameIdx = safeFrame + 1)}
-      >
-        ›
-      </button>
-    </div>
-  {/if}
 
   <section>
     <div class="row">
@@ -195,20 +168,6 @@
     display: flex;
     gap: 8px;
     margin-top: 6px;
-  }
-  .thumb :global(svg) {
-    width: 100%;
-    height: auto;
-    max-height: 38vh;
-    box-shadow: 0 2px 10px rgba(40, 30, 10, 0.25);
-  }
-  .nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    font-size: 12px;
-    color: var(--muted);
   }
   .hint {
     margin: 6px 0 0;

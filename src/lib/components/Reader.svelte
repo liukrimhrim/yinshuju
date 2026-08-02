@@ -5,10 +5,11 @@
 
   // 页序右起：向左翻=下一叶。左缘/←/左滑 → 后叶；右缘/→/右滑 → 前叶
   function next() {
-    if (app.curIdx < app.pages.length - 1) app.pageIdx = app.curIdx + 1;
+    if (app.curIdx + app.step < app.pages.length)
+      app.pageIdx = app.curIdx + app.step;
   }
   function prev() {
-    if (app.curIdx > 0) app.pageIdx = app.curIdx - 1;
+    if (app.curIdx > 0) app.pageIdx = app.curIdx - app.step;
   }
   function onKey(e: KeyboardEvent) {
     if (e.key === 'ArrowLeft') next();
@@ -38,7 +39,12 @@
   <button class="zone left" aria-label="后叶" onclick={next}></button>
   <button class="zone right" aria-label="前叶" onclick={prev}></button>
   <button class="close" aria-label="退出阅读" onclick={onclose}>×</button>
-  <div class="folio">第 {app.curIdx + 1} / {app.pages.length} 叶</div>
+  <div class="folio">
+    第 {Math.floor(app.curIdx / app.step) + 1} / {Math.ceil(
+      app.pages.length / app.step,
+    )}
+    {app.plan.mode === 'spread' ? '版' : '叶'}
+  </div>
 </div>
 
 <style>
@@ -51,9 +57,17 @@
     align-items: center;
     justify-content: center;
   }
+  .page {
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+  }
   .page :global(svg) {
-    height: 100vh;
+    display: block;
     width: auto;
+    height: auto;
+    max-width: 100vw;
+    max-height: 100vh;
   }
   .zone {
     position: absolute;

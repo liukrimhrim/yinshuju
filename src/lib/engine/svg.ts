@@ -553,7 +553,7 @@ function assemble(
       `<g filter="url(#inkErode)">${t.bigText}</g>` +
       `<g filter="url(#inkErodeNote)">${t.noteText}${t.marks}</g>`
     : `<rect width="${g.pageW}" height="${g.pageH}" fill="${P.paper}"/>${frame}${t.bigText}${t.noteText}${t.marks}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g.pageW} ${g.pageH}" font-family="${o.fontFamily}">${defs}${body}${o.overlays ?? ''}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${g.pageW}" height="${g.pageH}" viewBox="0 0 ${g.pageW} ${g.pageH}" font-family="${o.fontFamily}">${defs}${body}${o.overlays ?? ''}</svg>`;
 }
 
 // 摆位几何（印章等叠加层用）：与渲染同一套公式

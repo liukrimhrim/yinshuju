@@ -2,7 +2,7 @@ import { parse } from './engine/parse';
 import { layout } from './engine/layout';
 import { renderPage, renderSpread, LATIN_SERIF } from './engine/svg';
 import type { FishtailSpec } from './engine/svg';
-import { BASE_PAGE_H, SPREAD_PAGE_W } from './engine/geometry';
+import { computeLayoutPlan, ratioOf } from './engine/geometry';
 import {
   THEMES,
   DEFAULT_THEME_ID,
@@ -11,7 +11,7 @@ import {
   type Palette,
   type Theme,
 } from './engine/themes';
-import type { Meta } from './engine/types';
+import type { GridParams, Meta } from './engine/types';
 import { DEMO_META, DEMO_TEXT } from './demo';
 import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
 import { highRiskChars } from './convert';
@@ -52,6 +52,9 @@ class AppState {
   chapterScale = $state(0.85); // 篇题字号倍率（与著者同基准，行内小字方能齐平）
   titleScale = $state(1.3); // 书名字号倍率（卷端题名多大于正文）
   authorScale = $state(0.85);
+  ratioId = $state('base'); // 画幅比例档：预览与导出同一口径
+  customW = $state(16);
+  customH = $state(28);
   pageIdx = $state(0);
   seals = $state<SealSpec[]>([]); // 默认无印——避免首访即拉 21.8MB 篆书字体
   sealFont = $state<Font | null>(null);
@@ -80,14 +83,25 @@ class AppState {
     loadSealFont().then((f) => (this.sealFont = f));
   }
 
+  ratio = $derived(ratioOf(this.ratioId, this.customW, this.customH));
+  // 画幅计划：比例决定画布尺寸、单叶/对开、以及重排后的行格
+  plan = $derived(
+    computeLayoutPlan(this.ratio, {
+      cols: this.cols,
+      charsPerCol: this.charsPerCol,
+    }),
+  );
+  // 对开一版吃两叶，翻页步长随之
+  step = $derived(this.plan.mode === 'spread' ? 2 : 1);
+
   theme: Theme = $derived(
     THEMES.find((t) => t.id === this.themeId) ?? THEMES[0]!,
   );
-  pages = $derived(
+  private layoutWith = (grid: GridParams) =>
     layout(
       parse(this.effectiveText),
       this.effectiveMeta,
-      { cols: this.cols, charsPerCol: this.charsPerCol },
+      grid,
       this.titleScale,
       this.authorScale,
       this.chapterScale,
@@ -98,9 +112,12 @@ class AppState {
         author: this.authorIndent,
       },
       { small: this.sizeSmall, large: this.sizeLarge },
-    ),
-  );
-  curIdx = $derived(Math.max(0, Math.min(this.pageIdx, this.pages.length - 1)));
+    );
+  pages = $derived(this.layoutWith(this.plan.grid));
+  curIdx = $derived.by(() => {
+    const i = Math.max(0, Math.min(this.pageIdx, this.pages.length - 1));
+    return i - (i % this.step);
+  });
   // 当前叶所在篇题（含之前页最后出现的）
   private chapterAt = $derived.by(() => {
     if (!this.banxinChapter) return undefined;
@@ -125,7 +142,7 @@ class AppState {
       style: this.fishtailStyle,
       pairing: this.fishtailPairing,
     },
-    grid: { cols: this.cols, charsPerCol: this.charsPerCol },
+    grid: this.plan.grid,
     palette: this.palette,
     frameWidth: this.theme.frameWidth,
     texture: this.theme.texture && this.textureStrength > 0,
@@ -140,32 +157,37 @@ class AppState {
         spread: '',
         missing: [] as { index: number; chars: string[] }[],
       };
-    const base = { ...this.renderOpts };
-    const single = sealOverlaysFor(
-      this.seals,
-      this.sealFont,
-      pageGeo(base, 'single'),
-      this.palette,
-      fontFamily('twkai'),
-    );
-    const spread = sealOverlaysFor(
-      this.seals,
-      this.sealFont,
-      pageGeo({ ...base, pageW: SPREAD_PAGE_W, pageH: BASE_PAGE_H }, 'spread'),
-      this.palette,
-      fontFamily('twkai'),
-    );
+    const at = (pageW: number, mode: 'single' | 'spread') =>
+      sealOverlaysFor(
+        this.seals,
+        this.sealFont,
+        pageGeo({ ...this.renderOpts, pageW, pageH: this.plan.pageH }, mode),
+        this.palette,
+        fontFamily('twkai'),
+      );
+    const single = at(this.plan.pageW, this.plan.mode);
+    const spread = at(2 * this.plan.pageW, 'spread');
     return { single: single.svg, spread: spread.svg, missing: single.missing };
   });
   sealMissing = $derived(this.sealLayer.missing);
-  svg = $derived(
-    renderPage(this.pages[this.curIdx]!, this.effectiveMeta, {
+  svg = $derived.by(() => {
+    const pg = this.pages[this.curIdx]!;
+    const o = {
       ...this.renderOpts,
-      overlays:
-        this.pages[this.curIdx]!.folio === 1 ? this.sealLayer.single : '',
-    }),
-  );
-  // 对开预览：整叶 32:28（右=当前叶，左=次叶，中央整列版心）
+      pageW: this.plan.pageW,
+      pageH: this.plan.pageH,
+      overlays: pg.folio === 1 ? this.sealLayer.single : '',
+    };
+    return this.plan.mode === 'spread'
+      ? renderSpread(
+          pg,
+          this.pages[this.curIdx + 1] ?? null,
+          this.effectiveMeta,
+          o,
+        )
+      : renderPage(pg, this.effectiveMeta, o);
+  });
+  // 手动对开：两个当前画幅的半叶并排（右=当前叶，左=次叶，中央整列版心）
   svgSpread = $derived(
     renderSpread(
       this.pages[this.curIdx]!,
@@ -173,8 +195,8 @@ class AppState {
       this.effectiveMeta,
       {
         ...this.renderOpts,
-        pageW: SPREAD_PAGE_W,
-        pageH: BASE_PAGE_H,
+        pageW: 2 * this.plan.pageW,
+        pageH: this.plan.pageH,
         overlays:
           this.pages[this.curIdx]!.folio === 1 ? this.sealLayer.spread : '',
       },
@@ -211,6 +233,9 @@ class AppState {
     'authorIndent',
     'sizeLarge',
     'sizeSmall',
+    'ratioId',
+    'customW',
+    'customH',
   ] as const;
 
   constructor() {
@@ -243,14 +268,26 @@ class AppState {
 
   printSvgs = $state<string[] | null>(null);
 
+  // 打印出口恒为 16×28cm 原开本，按用户行格重排，不随预览画幅
   buildPrintSvgs(): string[] {
+    const grid = { cols: this.cols, charsPerCol: this.charsPerCol };
+    const opts = { ...this.renderOpts, grid };
+    const seal = this.seals.length
+      ? sealOverlaysFor(
+          this.seals,
+          this.sealFont,
+          pageGeo(opts, 'single'),
+          this.palette,
+          fontFamily('twkai'),
+        ).svg
+      : '';
     let chapter: string | undefined;
-    return this.pages.map((pg) => {
+    return this.layoutWith(grid).map((pg) => {
       for (const c of pg.chapters) chapter = c;
       return renderPage(pg, this.effectiveMeta, {
-        ...this.renderOpts,
+        ...opts,
         banxinChapter: this.banxinChapter ? chapter : undefined,
-        overlays: pg.folio === 1 ? this.sealLayer.single : '',
+        overlays: pg.folio === 1 ? seal : '',
       });
     });
   }

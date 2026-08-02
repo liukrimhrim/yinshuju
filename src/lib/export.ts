@@ -11,22 +11,6 @@ import type { Font } from 'opentype.js';
 import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
 import { contentSeed, pageGeo } from './engine/svg';
 
-export interface RatioPreset {
-  id: string;
-  label: string;
-  ratio: number;
-}
-
-// 各平台推荐像素随时变，故只固定比例、分辨率交给倍率（mvp-v1：不写死平台像素）
-export const RATIO_PRESETS: readonly RatioPreset[] = [
-  { id: 'base', label: '原开本 16:28', ratio: BASE_RATIO },
-  { id: 'wallpaper', label: '手机壁纸 9:19.5', ratio: 9 / 19.5 },
-  { id: 'r34', label: '竖幅 3:4', ratio: 3 / 4 },
-  { id: 'r45', label: '竖幅 4:5', ratio: 4 / 5 },
-  { id: 'square', label: '方形对开 1:1', ratio: 1 },
-  { id: 'wide', label: '横幅对开 2:1', ratio: 2 },
-] as const;
-
 // —— 字体切片内嵌（stack-v1 路线 b）：按用字命中切片，data-URI 进 SVG ——
 
 interface Manifest {
