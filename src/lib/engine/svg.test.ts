@@ -36,7 +36,7 @@ describe('SVG 渲染', () => {
     const svg = renderPage(page, meta, opts('zhusilan'));
     expect(svg).toContain('<svg');
     expect(svg).toContain('clip-path="url(#pc)"');
-    expect(svg).toContain('l-'); // 鱼尾 path
+    expect(svg).toMatch(/<path d="M-?[\d.]+,[\d.]+ H/); // 鱼尾 path
     expect(svg).not.toContain('feTurbulence');
     expect(svg).toContain('>一<'); // 页码 一
   });
@@ -136,8 +136,8 @@ describe('SVG 渲染', () => {
     const svg = renderPage(page, meta, opts('zhusilan'));
     const frame = /<path d="M([\d.]+),([\d.]+) H([\d.]+)/.exec(svg)!;
     expect(Number(frame[1])).toBe(0); // 折缝贴边
-    // 版心（鱼尾）中线亦在 0，右半可见
-    expect(svg).toMatch(/<path d="M-[\d.]+,[\d.]+ h/);
+    // 版心（鱼尾）中线亦在 0：鱼尾左缘为负坐标，右半可见
+    expect(svg).toMatch(/<path d="M-[\d.]+,[\d.]+ H/);
   });
 
   it('对开整叶：两侧对称留边（非折缝页，不贴边）', () => {
@@ -152,10 +152,14 @@ describe('SVG 渲染', () => {
   });
 
   it('鱼尾形制：单尾带 3/4 横线；双尾两枚；对尾下枚镜像、顺尾同向', () => {
+    // 尾尖方向：平头 y 与尾尖 y 的差（>0 = 尾尖朝下）
+    // 尾尖方向：平头 y 与尾尖 y 之差（>0 = 尾尖朝下）；闭合 Z 排除版框 path
     const tails = (svg: string) =>
-      [...svg.matchAll(/<path d="M-?[\d.]+,[\d.]+ h[\d.]+ v(-?[\d.]+)/g)].map(
-        (m) => Number(m[1]),
-      );
+      [
+        ...svg.matchAll(
+          /<path d="M-?[\d.]+,([\d.]+) H-?[\d.]+ V([\d.]+)[^"]*Z"/g,
+        ),
+      ].map((m) => Number(m[2]) - Number(m[1]));
     const single = renderPage(page, meta, opts('zhusilan'));
     expect(tails(single)).toHaveLength(1);
     expect(single).toContain('stroke-width="1"'); // 单尾本 3/4 横细线
@@ -176,22 +180,32 @@ describe('SVG 渲染', () => {
     expect(tails(aligned).map(Math.sign)).toEqual([1, 1]); // 顺鱼尾同向
   });
 
-  it('鱼尾样式：白尾线描不填色，花尾带纸色人字饰', () => {
-    const white = renderPage(page, meta, {
-      ...opts('zhusilan'),
-      fishtail: { count: 1, style: 'white', pairing: 'opposed' },
-    });
-    expect(white).toMatch(
-      /<path d="M-?[\d.]+,[\d.]+ h[\d.]+ v[\d.]+[^"]*" fill="none" stroke=/,
-    );
+  it('鱼尾样式：白尾线描不填、花尾曲线叉、线尾由多线组成', () => {
+    const ft = (style: string) =>
+      renderPage(page, meta, {
+        ...opts('zhusilan'),
+        fishtail: { count: 1, style, pairing: 'opposed' } as never,
+      });
 
-    const flower = renderPage(page, meta, {
-      ...opts('zhusilan'),
-      fishtail: { count: 1, style: 'flower', pairing: 'opposed' },
-    });
+    // 黑尾：实心直叉（L 命令，无 Q）
+    const black = ft('black');
+    expect(black).toMatch(/<path d="M[^"]*L[^"]*" fill="#/);
+    expect(/<path d="M[^"]*C[^"]*Z" fill="#/.test(black)).toBe(false);
+
+    // 白尾：仅描边不填
+    expect(ft('white')).toMatch(/<path d="M[^"]*" fill="none" stroke="#/);
+
+    // 花尾：分叉处为 S 曲线（C 命令）、实心、无内饰划痕
+    const flower = ft('flower');
     const paper = THEMES.find((x) => x.id === 'zhusilan')!.palette.paper;
-    expect(flower).toContain(`stroke="${paper}"`); // 人字饰用纸色
-    expect(flower).toContain('stroke-linejoin="round"');
+    expect(flower).toMatch(/<path d="M[^"]*C[^"]*Z" fill="#/);
+    expect(flower).not.toContain(`stroke="${paper}"`);
+
+    // 线尾：外轮廓 + 两道内嵌叉线，均描边不填充
+    const line = ft('line');
+    expect(line).toMatch(/<path d="M[^"]*Z" fill="none" stroke="#/); // 轮廓
+    expect((line.match(/<path[^>]*stroke-width="1.1"/g) ?? []).length).toBe(2); // 内嵌两道（版框内线是 line 不计）
+    expect(/<path d="M[^"]*Z" fill="#/.test(line)).toBe(false); // 无实心块
   });
 
   it('toCnNum：一位/十位/两位', () => {

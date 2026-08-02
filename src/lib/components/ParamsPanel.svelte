@@ -147,8 +147,9 @@
       </select>
       <select bind:value={app.fishtailStyle}>
         <option value="black">黑鱼尾（实心）</option>
-        <option value="white">白鱼尾（线描）</option>
-        <option value="flower">花鱼尾（带饰）</option>
+        <option value="white">白鱼尾（空心）</option>
+        <option value="line">线鱼尾（多线）</option>
+        <option value="flower">花鱼尾（曲线叉）</option>
       </select>
     </div>
     {#if app.fishtailCount === 2}

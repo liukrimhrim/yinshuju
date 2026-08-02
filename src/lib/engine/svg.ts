@@ -21,7 +21,7 @@ export interface RenderOptions {
 // 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
 export interface FishtailSpec {
   count: 1 | 2;
-  style: 'black' | 'white' | 'flower';
+  style: 'black' | 'white' | 'line' | 'flower';
   pairing: 'aligned' | 'opposed';
 }
 
@@ -181,6 +181,28 @@ function vertText(
 }
 
 // 版心内容（鱼尾 + 简名卷次 + 页码），中心线在 cx；单叶模式配合 clip 只露右半
+// 分叉线：从左尾尖经中央凹口到右尾尖。curved=花鱼尾的曲线叉（规范：分叉处为曲线者为花鱼尾）
+function forkPath(
+  cx: number,
+  w: number,
+  yBase: number, // 尾尖所在水平线
+  notch: number, // 凹口深（朝 dir 反向）
+  dir: 1 | -1, // 1=尾尖朝下
+  curved: boolean,
+): string {
+  const apex = yBase - dir * notch;
+  const left = cx - w / 2;
+  const right = cx + w / 2;
+  if (!curved) return `M${left},${yBase} L${cx},${apex} L${right},${yBase}`;
+  // 花鱼尾：S 形（如意）曲线叉——近尾尖处平缓、近中缝陡起
+  const near = (yBase - dir * notch * 0.1).toFixed(1);
+  const far = (apex + dir * notch * 0.22).toFixed(1);
+  return (
+    `M${left},${yBase} C${(cx - w * 0.34).toFixed(1)},${near} ${(cx - w * 0.14).toFixed(1)},${far} ${cx},${apex.toFixed(1)}` +
+    ` C${(cx + w * 0.14).toFixed(1)},${far} ${(cx + w * 0.34).toFixed(1)},${near} ${right},${yBase}`
+  );
+}
+
 // 一枚鱼尾：tipsUp=false 尾尖朝下（常式），true 为镜像（对鱼尾的下尾）
 function fishtail(
   cx: number,
@@ -192,23 +214,35 @@ function fishtail(
   style: FishtailSpec['style'],
   P: Palette,
 ): string {
-  const d = tipsUp
-    ? `M${cx - w / 2},${yTop + depth} h${w} v${-depth} l${-w / 2},${notch} l${-w / 2},${-notch} z`
-    : `M${cx - w / 2},${yTop} h${w} v${depth} l${-w / 2},${-notch} l${-w / 2},${notch} z`;
+  const dir: 1 | -1 = tipsUp ? -1 : 1;
+  const yHead = tipsUp ? yTop + depth : yTop; // 平头一侧
+  const yBase = tipsUp ? yTop : yTop + depth; // 尾尖一侧
+  const left = cx - w / 2;
+  const right = cx + w / 2;
+  const curved = style === 'flower';
+  // 轮廓 = 平头 + 两侧 + 分叉
+  const body =
+    `M${left},${yHead} H${right} V${yBase} ` +
+    forkPath(cx, w, yBase, notch, dir, curved).replace(
+      /^M[\d.-]+,[\d.-]+ /,
+      '',
+    ) +
+    ` L${left},${yHead} Z`;
+
   if (style === 'white')
-    return `<path d="${d}" fill="none" stroke="${P.frame}" stroke-width="1.6"/>`;
-  let out = `<path d="${d}" fill="${P.frame}"/>`;
-  if (style === 'flower') {
-    // 花鱼尾：实心内嵌两道纸色人字饰
-    const dir = tipsUp ? -1 : 1;
-    const baseY = tipsUp ? yTop + depth : yTop;
-    for (const k of [0.34, 0.6]) {
-      const y0 = baseY + dir * depth * k;
-      const y1 = y0 - dir * notch * 0.45;
-      out += `<path d="M${cx - w / 2 + w * 0.12},${y0} L${cx},${y1} L${cx + w / 2 - w * 0.12},${y0}" fill="none" stroke="${P.paper}" stroke-width="${(w * 0.055).toFixed(1)}" stroke-linejoin="round"/>`;
-    }
+    return `<path d="${body}" fill="none" stroke="${P.frame}" stroke-width="1.6"/>`;
+
+  if (style === 'line') {
+    // 线鱼尾：由若干线条组成——外轮廓 + 两道内嵌同形叉线（间距紧凑，整体仍读作一枚鱼尾）
+    let out = `<path d="${body}" fill="none" stroke="${P.frame}" stroke-width="1.4"/>`;
+    for (const k of [0.17, 0.34])
+      out += `<path d="${forkPath(cx, w * (1 - k * 0.55), yBase - dir * depth * k, notch * (1 - k * 0.75), dir, false)}" fill="none" stroke="${P.frame}" stroke-width="1.1"/>`;
+    return out;
   }
-  return out;
+
+  // 黑鱼尾（直叉）与花鱼尾（S 曲线叉）皆实心；花的装饰性全在叉的轮廓，
+  // 不加内饰——半叶只露半枚鱼尾时，内饰会退化成一道斜划痕。
+  return `<path d="${body}" fill="${P.frame}"/>`;
 }
 
 function banxinAt(
