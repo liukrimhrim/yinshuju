@@ -240,6 +240,33 @@
   <section>
     <div class="row">
       <div>
+        <label for="p-ci">篇题低格 {app.chapterIndent} 字</label>
+        <input
+          id="p-ci"
+          type="range"
+          min="0"
+          max="6"
+          step="0.5"
+          bind:value={app.chapterIndent}
+        />
+      </div>
+      <div>
+        <label for="p-ai">题署距底 {app.authorIndent} 字</label>
+        <input
+          id="p-ai"
+          type="range"
+          min="0"
+          max="6"
+          step="0.5"
+          bind:value={app.authorIndent}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="row">
+      <div>
         <label for="p-ts">书名字号 {app.titleScale.toFixed(2)}×</label>
         <input
           id="p-ts"

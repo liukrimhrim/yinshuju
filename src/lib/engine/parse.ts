@@ -123,14 +123,16 @@ export function parsePara(b: string): Run[] {
   return runs;
 }
 
+// 留白指令：段首 [2]＝天地各留 2 字位、[2,0] 只留天头；篇题/题署行 [n]＝低几字位/距底几字位
+const INDENT_RE = /^\[(\d+(?:\.\d+)?)(?:\s*[,，]\s*(\d+(?:\.\d+)?))?\]\s*/;
+
 export function parse(src: string): Block[] {
   const trimmed = src.replace(/^\n+|\n+$/g, '');
   if (!trimmed.trim()) return [];
   const blocks: Block[] = [];
   let paraLines: string[] = [];
   let blankRun = 0;
-  // 段首留白指令：[2]＝天地各留 2 字位；[2,0]＝只留天头；[0,3]＝只留地脚
-  const INDENT_RE = /^\[(\d+(?:\.\d+)?)(?:\s*[,，]\s*(\d+(?:\.\d+)?))?\]\s*/;
+
   const flush = () => {
     if (paraLines.length) {
       let body = paraLines.join('\n');
@@ -165,14 +167,32 @@ export function parse(src: string): Block[] {
     }
     if (line.trim().startsWith('>')) {
       flush();
-      const runs = parsePara(line.trim().replace(/^>+\s*/, ''));
-      blocks.push({ type: 'author', text: plainOf(runs), runs });
+      let body = line.trim().replace(/^>+\s*/, '');
+      const m = INDENT_RE.exec(body);
+      const offset = m ? Number(m[1]) : undefined;
+      if (m) body = body.slice(m[0].length);
+      const runs = parsePara(body);
+      blocks.push({
+        type: 'author',
+        text: plainOf(runs),
+        runs,
+        ...(offset === undefined ? {} : { offset }),
+      });
       continue;
     }
     if (line.trim().startsWith('#')) {
       flush();
-      const runs = parsePara(line.trim().replace(/^#+\s*/, ''));
-      blocks.push({ type: 'chapter', text: plainOf(runs), runs });
+      let body = line.trim().replace(/^#+\s*/, '');
+      const m = INDENT_RE.exec(body);
+      const offset = m ? Number(m[1]) : undefined;
+      if (m) body = body.slice(m[0].length);
+      const runs = parsePara(body);
+      blocks.push({
+        type: 'chapter',
+        text: plainOf(runs),
+        runs,
+        ...(offset === undefined ? {} : { offset }),
+      });
     } else {
       paraLines.push(line);
     }

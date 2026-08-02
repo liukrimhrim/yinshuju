@@ -160,7 +160,7 @@ export interface ExportContext {
   uploadData: ArrayBuffer | null;
   titleScale: number;
   authorScale: number;
-  indent: { top: number; bottom: number };
+  indent: { top: number; bottom: number; chapter?: number; author?: number };
   sizes: { small: number; large: number };
 }
 

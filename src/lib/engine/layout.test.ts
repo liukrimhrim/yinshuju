@@ -368,6 +368,40 @@ describe('布局引擎', () => {
     expect(at('乙').half).toBe(0); // 该段覆盖为 0
   });
 
+  it('篇题低格与题署距底可调，并支持行内 [n] 覆盖', () => {
+    const g = { cols: 10, charsPerCol: 17 };
+    const HTOTAL = g.charsPerCol * 2;
+    const mk = (src: string, ind = {}) =>
+      layout(parse(src), meta, g, 1, 0.85, {
+        top: 0,
+        bottom: 0,
+        ...ind,
+      })[0]!;
+
+    // 默认低二格
+    expect(mk('# 甲').chars.find((c) => c.role === 'chapter')!.half).toBe(4);
+    // 全局调为低四格
+    expect(
+      mk('# 甲', { chapter: 4 }).chars.find((c) => c.role === 'chapter')!.half,
+    ).toBe(8);
+    // 行内 [1] 覆盖
+    expect(
+      mk('# [1]甲', { chapter: 4 }).chars.find((c) => c.role === 'chapter')!
+        .half,
+    ).toBe(2);
+
+    // 题署距底：默认 2 字位、全局 3 字位、行内 [0]
+    const endOf = (p: ReturnType<typeof mk>) =>
+      Math.max(
+        ...p.chars
+          .filter((c) => c.role === 'author' && c.col >= 2)
+          .map((c) => c.half + (c.hSpan ?? 2)),
+      );
+    expect(endOf(mk('> 甲'))).toBe(HTOTAL - 4);
+    expect(endOf(mk('> 甲', { author: 3 }))).toBe(HTOTAL - 6);
+    expect(endOf(mk('> [0]甲', { author: 3 }))).toBe(HTOTAL);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

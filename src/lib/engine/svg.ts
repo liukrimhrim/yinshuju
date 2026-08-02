@@ -22,6 +22,7 @@ export interface RenderOptions {
   showFolio?: boolean; // 是否印页码，缺省印
   indentTop?: number; // 天头留白（字位）——仅供印章等叠加层定位
   indentBottom?: number; // 地脚留白（字位）
+  authorReserve?: number; // 题署距底留白（字位）——印章槽位据此上移
 }
 
 // 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
@@ -547,6 +548,7 @@ export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
     ty0: g.ty0 + (o.indentTop ?? 0) * g.cellH,
     cellH: g.cellH,
     rows: o.grid.charsPerCol - (o.indentTop ?? 0) - (o.indentBottom ?? 0),
+    reserve: o.authorReserve ?? 2,
   };
 }
 

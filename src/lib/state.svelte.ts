@@ -44,6 +44,8 @@ class AppState {
   indentTop = $state(0); // 天头留白（字位）
   indentBottom = $state(0); // 地脚留白
   indentSym = $state(true); // 上下对称
+  chapterIndent = $state(2); // 篇题低格（字位）
+  authorIndent = $state(2); // 题署距底留白（字位）
   titleScale = $state(1.3); // 书名字号倍率（卷端题名多大于正文）
   authorScale = $state(0.85);
   pageIdx = $state(0);
@@ -84,7 +86,12 @@ class AppState {
       { cols: this.cols, charsPerCol: this.charsPerCol },
       this.titleScale,
       this.authorScale,
-      { top: this.indentTop, bottom: this.indentBottom },
+      {
+        top: this.indentTop,
+        bottom: this.indentBottom,
+        chapter: this.chapterIndent,
+        author: this.authorIndent,
+      },
       { small: this.sizeSmall, large: this.sizeLarge },
     ),
   );
@@ -101,6 +108,7 @@ class AppState {
     banxinChapter: this.chapterAt,
     indentTop: this.indentTop,
     indentBottom: this.indentBottom,
+    authorReserve: this.authorIndent,
     folioStart: this.folioStart,
     folioNumeral: this.folioNumeral,
     showFolio: this.showFolio,
@@ -187,6 +195,8 @@ class AppState {
     'indentTop',
     'indentBottom',
     'indentSym',
+    'chapterIndent',
+    'authorIndent',
     'sizeLarge',
     'sizeSmall',
   ] as const;
@@ -240,7 +250,12 @@ class AppState {
       meta: this.effectiveMeta,
       titleScale: this.titleScale,
       authorScale: this.authorScale,
-      indent: { top: this.indentTop, bottom: this.indentBottom },
+      indent: {
+        top: this.indentTop,
+        bottom: this.indentBottom,
+        chapter: this.chapterIndent,
+        author: this.authorIndent,
+      },
       sizes: { small: this.sizeSmall, large: this.sizeLarge },
       grid: { cols: this.cols, charsPerCol: this.charsPerCol },
       render,

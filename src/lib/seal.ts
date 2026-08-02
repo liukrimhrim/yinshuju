@@ -161,6 +161,7 @@ export interface SealGeo {
   ty0: number; // 正文区上缘
   cellH: number; // 一字格高
   rows: number; // 每列字数
+  reserve: number; // 题署距底留白（字位）
 }
 
 export function sealOverlaysFor(
@@ -172,7 +173,7 @@ export function sealOverlaysFor(
 ): { svg: string; missing: { index: number; chars: string[] }[] } {
   // 印面不超过列宽，也不超过两字格高（著者列末尾恰留两格空位，见 layout）
   const size = Math.min(geo.colW * 0.92, geo.cellH * 1.9);
-  const colBottom = geo.ty0 + (geo.rows - 2) * geo.cellH; // 末二格起
+  const colBottom = geo.ty0 + (geo.rows - geo.reserve) * geo.cellH; // 题署留白处起
   const slotBase: Record<SealSpec['slot'], { x: number; y: number }> = {
     authorBelow: {
       x: geo.tx1 - 2 * geo.colW + (geo.colW - size) / 2,

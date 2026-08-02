@@ -34,6 +34,8 @@ const spanOfScale = (scale: number) => {
 export interface Indent {
   top: number; // 天头留白（字位，可 0.5 步进）
   bottom: number; // 地脚留白
+  chapter?: number; // 篇题低格（默认 2 字位）
+  author?: number; // 题署距底留白（默认 2 字位）
 }
 
 export function layout(
@@ -168,7 +170,9 @@ export function layout(
   const authorRuns = parsePara(meta.author);
   const authorHalf = Math.max(
     HMIN + 2,
-    HMAX - 4 - spanOfRuns(authorRuns, authorScale),
+    HMAX -
+      Math.round((indent.author ?? 2) * 2) -
+      spanOfRuns(authorRuns, authorScale),
   );
   placeRuns(authorRuns, 1, authorHalf, 'author', authorScale);
   col = 2;
@@ -195,14 +199,23 @@ export function layout(
     }
     if (b.type === 'author') {
       // 正文中的题署：自成一列，与卷端著者同样低格对齐（末留两字位）
-      const start = Math.max(hMin, hMax - 4 - spanOfRuns(b.runs, authorScale));
+      const reserve = Math.round((b.offset ?? indent.author ?? 2) * 2);
+      const start = Math.max(
+        hMin,
+        hMax - reserve - spanOfRuns(b.runs, authorScale),
+      );
       placeRuns(b.runs, col, start, 'author', authorScale);
       advanceCol();
       continue;
     }
     if (b.type === 'chapter') {
       curChapters.push(b.text);
-      placeRuns(b.runs, col, HMIN + 4, 'chapter'); // 低二格
+      placeRuns(
+        b.runs,
+        col,
+        hMin + Math.round((b.offset ?? indent.chapter ?? 2) * 2),
+        'chapter',
+      );
       advanceCol();
       continue;
     }
