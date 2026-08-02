@@ -8,12 +8,15 @@ export interface Meta {
 }
 
 export type Run =
-  | { t: 'text'; s: string; mark?: SideMark }
+  | { t: 'text'; s: string; mark?: SideMark; size?: CharSize }
   | { t: 'note'; chars: NoteChar[] } // 双行小字夹注
   | { t: 'punct'; kind: PunctKind }; // 句读，附着于前一大字
 
 // 旁线标记（markup v2，vRain 体系）：书名波浪线/着重圈注/点注/专名直线，画在字右侧
 export type SideMark = 'book' | 'circle' | 'dot' | 'line';
+
+// 单行字号（markup v2）：小字占半格、正文占一格、大字占两格——恒守行格
+export type CharSize = 'small' | 'large';
 
 export type PunctKind = 'ju' | 'dou'; // 句=○ 读=丶
 
@@ -31,7 +34,9 @@ export interface PlacedChar {
   kind: 'big' | 'note';
   ch: string;
   col: number; // 页内列序，0 = 最右
-  half: number; // 半格游标（一整字占 2 半格）
+  half: number; // 半格游标（起点；一整字占 2 半格）
+  hSpan?: number; // 占用半格数：小字 1 / 正文 2 / 大字 4；缺省按 kind 推定
+  scale?: number; // 字号倍率（相对正文）；缺省 1
   sub?: 'R' | 'L'; // 夹注子列，右先
   punct?: PunctKind; // 附着此字的句读
   mark?: SideMark; // 旁线标记（书名线等）

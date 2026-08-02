@@ -95,6 +95,32 @@ describe('markup v1 解析', () => {
     expect(runs).toHaveLength(4);
   });
 
+  it('markdown 字号：*小字* 与 **大字**', () => {
+    const blocks = parse('正文*小注*正文**标目**尾');
+    const runs = blocks[0]?.type === 'para' ? blocks[0].runs : [];
+    const texts = runs.filter((r) => r.t === 'text') as {
+      s: string;
+      size?: string;
+    }[];
+    expect(texts.find((r) => r.s === '小')?.size).toBe('small');
+    expect(texts.find((r) => r.s === '注')?.size).toBe('small');
+    expect(texts.find((r) => r.s === '标')?.size).toBe('large');
+    expect(texts.find((r) => r.s === '目')?.size).toBe('large');
+    expect(texts.find((r) => r.s === '尾')?.size).toBeUndefined();
+    expect(texts.filter((r) => r.s === '正').every((r) => !r.size)).toBe(true);
+  });
+
+  it('未闭合字号标记吃到块尾，星号本身不入正文', () => {
+    const blocks = parse('天**地人');
+    const runs = blocks[0]?.type === 'para' ? blocks[0].runs : [];
+    const texts = runs.filter((r) => r.t === 'text') as {
+      s: string;
+      size?: string;
+    }[];
+    expect(texts.map((r) => r.s).join('')).toBe('天地人');
+    expect(texts.find((r) => r.s === '地')?.size).toBe('large');
+  });
+
   it('篇题按行判定：#行后无空行的正文不被吞', () => {
     const blocks = parse('# 上篇\n上德不德。\n\n下文');
     expect(blocks).toHaveLength(3);

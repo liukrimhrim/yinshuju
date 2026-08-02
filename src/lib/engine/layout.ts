@@ -1,4 +1,18 @@
-import type { Block, GridParams, Meta, Page, PlacedChar } from './types';
+import type {
+  Block,
+  CharSize,
+  GridParams,
+  Meta,
+  Page,
+  PlacedChar,
+} from './types';
+
+// 字号 → （占用半格数, 字号倍率）。恒守行格：小字两枚合一字位、大字独占两字位
+const SIZE: Record<CharSize | 'body', { hSpan: number; scale: number }> = {
+  small: { hSpan: 1, scale: 0.55 },
+  body: { hSpan: 2, scale: 1 },
+  large: { hSpan: 4, scale: 1.5 },
+};
 
 // 布局引擎：块 → 逐页网格坐标（col 右起 0，half 半格游标；大字占 2 半格）
 // 几何换算（px）不在此层，见 svg.ts
@@ -58,18 +72,21 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
     }
     for (const r of b.runs) {
       if (r.t === 'text') {
-        if (half % 2) half++;
-        if (half >= HMAX) advanceCol();
+        const { hSpan, scale } = SIZE[r.size ?? 'body'];
+        if (hSpan > 1 && half % 2) half++; // 正文与大字须对齐字位
+        if (half + hSpan > HMAX) advanceCol();
         const o: PlacedChar = {
           kind: 'big',
           ch: r.s,
           col,
           half,
+          hSpan,
+          scale,
           ...(r.mark ? { mark: r.mark } : {}),
         };
         cur.push(o);
         lastBig = o;
-        half += 2;
+        half += hSpan;
       } else if (r.t === 'punct') {
         if (lastBig) lastBig.punct = r.kind;
       } else {

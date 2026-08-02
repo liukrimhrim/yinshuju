@@ -1,4 +1,11 @@
-import type { Block, NoteChar, PunctKind, Run, SideMark } from './types';
+import type {
+  Block,
+  CharSize,
+  NoteChar,
+  PunctKind,
+  Run,
+  SideMark,
+} from './types';
 
 const JU = '。！？';
 const DOU = '，、；：';
@@ -37,9 +44,18 @@ const MARK_CLOSE = new Set(['》', '｝', '＞', '］']);
 function parsePara(b: string): Run[] {
   const runs: Run[] = [];
   let curMark: SideMark | null = null;
+  let curSize: CharSize | null = null;
   let i = 0;
   while (i < b.length) {
     const c = b[i]!;
+    // markdown 字号：**大字** / *小字*（成对开合，未闭合则吃到块尾）
+    if (c === '*') {
+      const isDouble = b[i + 1] === '*';
+      const want: CharSize = isDouble ? 'large' : 'small';
+      curSize = curSize === want ? null : want;
+      i += isDouble ? 2 : 1;
+      continue;
+    }
     if (MARK_OPEN[c] && !curMark) {
       curMark = MARK_OPEN[c]!;
       i++;
@@ -61,7 +77,12 @@ function parsePara(b: string): Run[] {
     const k = punctKind(c);
     if (k) runs.push({ t: 'punct', kind: k });
     else if (!/\s/.test(c) && !isDropped(c))
-      runs.push({ t: 'text', s: c, ...(curMark ? { mark: curMark } : {}) });
+      runs.push({
+        t: 'text',
+        s: c,
+        ...(curMark ? { mark: curMark } : {}),
+        ...(curSize ? { size: curSize } : {}),
+      });
     i++;
   }
   return runs;

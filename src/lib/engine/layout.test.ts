@@ -126,6 +126,31 @@ describe('布局引擎', () => {
     expect(pages.flatMap((p) => p.chapters)).toEqual(['上篇', '下篇']);
   });
 
+  it('字号占格：小字半格、正文一格、大字两格，且正文/大字对齐字位', () => {
+    const p = layout(parse('甲*乙丙*丁**戊**'), meta, grid)[0]!;
+    const of = (ch: string) => bigs(p).find((c) => c.ch === ch)!;
+    expect(of('甲').hSpan).toBe(2);
+    expect(of('乙').hSpan).toBe(1);
+    expect(of('丙').hSpan).toBe(1);
+    // 两个小字合占一个字位：乙丙紧邻半格
+    expect(of('丙').half - of('乙').half).toBe(1);
+    // 丁为正文，须回到偶数半格
+    expect(of('丁').half % 2).toBe(0);
+    expect(of('戊').hSpan).toBe(4);
+    expect(of('戊').half % 2).toBe(0);
+    expect(of('戊').scale).toBeGreaterThan(1);
+    expect(of('乙').scale).toBeLessThan(1);
+  });
+
+  it('大字放不下整两格时改排下一列', () => {
+    const g = { cols: 10, charsPerCol: 4 }; // 每列 8 半格
+    const p = layout(parse('甲乙丙**丁**'), meta, g)[0]!;
+    const dai = bigs(p).find((c) => c.ch === '丁')!;
+    const jia = bigs(p).find((c) => c.ch === '甲')!;
+    expect(dai.col).toBe(jia.col + 1);
+    expect(dai.half).toBe(0);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

@@ -365,13 +365,18 @@ function glyphs(
   showPunct: boolean,
   acc: GlyphLayers,
 ): void {
+  // 纵向中心＝起点半格 + 占格数之半（夹注 1 格、正文 2 格、大字 4 格通用）
+  const centerY = (ch: PlacedChar) => {
+    const span = ch.hSpan ?? (ch.kind === 'note' ? 1 : 2);
+    return g.ty0 + (ch.half + span / 2) * (g.cellH / 2);
+  };
   const metrics = (ch: PlacedChar) =>
     ch.kind === 'note'
       ? {
           size: g.noteFs,
           fill: P.note,
           x: colX(ch.col) + g.colW * (ch.sub === 'L' ? 0.26 : 0.74),
-          y: g.ty0 + ch.half * (g.cellH / 2) + g.cellH / 4,
+          y: centerY(ch),
           markX:
             colX(ch.col) +
             g.colW * (ch.sub === 'L' ? 0.26 : 0.74) +
@@ -379,10 +384,10 @@ function glyphs(
           markR: g.fs * 0.055,
         }
       : {
-          size: ch.role === 'author' ? g.fs * 0.85 : g.fs,
+          size: ch.role === 'author' ? g.fs * 0.85 : g.fs * (ch.scale ?? 1),
           fill: P.text,
           x: colX(ch.col) + g.colW / 2,
-          y: g.ty0 + (ch.half / 2) * g.cellH + g.cellH / 2,
+          y: centerY(ch),
           markX: colX(ch.col) + g.colW - 5,
           markR: g.fs * 0.088,
         };
