@@ -370,6 +370,11 @@
         {/if}
       {/each}
     </select>
+    <label for="p-latin">西文字体</label>
+    <select id="p-latin" bind:value={app.latinFont}>
+      <option value="cjk">随汉字字体</option>
+      <option value="serif">西文衬线（Georgia／Times）</option>
+    </select>
     <button onclick={() => fontFile.click()}>上传字体（TTF/OTF）</button>
     <input
       type="file"

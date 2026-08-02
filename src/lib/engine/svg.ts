@@ -25,6 +25,7 @@ export interface RenderOptions {
   authorReserve?: number; // 题署距底留白（字位）——印章槽位据此上移
   charFillV?: number; // 纵向：字高 / 一字格高（默认 0.80）——控上下字距
   charFillH?: number; // 横向：字宽 / 列宽（默认 0.68）——控字与界行的距离
+  latinFamily?: string; // 拉丁/数字字体；缺省＝随汉字字体
 }
 
 // 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
@@ -65,8 +66,9 @@ export function toCnNum(n: number): string {
   );
 }
 
-export // 拉丁/数字用比例衬线字体（中文字体的西文字形多为全宽，疏散且不搭）
-const LATIN_FAMILY = "Georgia,'Times New Roman',serif";
+// 拉丁/数字字体：缺省随汉字字体（同一字体家族最协调）；
+// 亦可指定西文衬线（汉字字体的西文字形若不佳时用）
+export const LATIN_SERIF = "Georgia,'Times New Roman',serif";
 
 export const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -237,6 +239,7 @@ function vertText(
   yStart: number,
   baseSize: number,
   fill: string,
+  latinFam = LATIN_SERIF,
 ): { svg: string; next: number } {
   let out = '';
   let y = yStart;
@@ -252,13 +255,13 @@ function vertText(
       const { hSpan, upright } = latinSpan(seg.s);
       const cells = hSpan / 2;
       if (upright) {
-        out += `<text x="${x}" y="${y}" font-size="${(size * 0.82).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(size * 0.92).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(seg.s)}</text>`;
+        out += `<text x="${x}" y="${y}" font-size="${(size * 0.82).toFixed(1)}" fill="${fill}" font-family="${latinFam}" textLength="${(size * 0.92).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(seg.s)}</text>`;
         y += adv;
       } else {
         const cy = y + ((cells - 1) * adv) / 2;
         const fsz = size * 0.88;
         const len = Math.min(latinWidthEm(seg.s) * fsz, cells * adv * 0.94);
-        out += `<text x="${x}" y="${cy.toFixed(1)}" font-size="${fsz.toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${len.toFixed(1)}" lengthAdjust="spacingAndGlyphs" transform="rotate(90 ${x.toFixed(1)} ${cy.toFixed(1)})" ${CT}>${esc(seg.s)}</text>`;
+        out += `<text x="${x}" y="${cy.toFixed(1)}" font-size="${fsz.toFixed(1)}" fill="${fill}" font-family="${latinFam}" textLength="${len.toFixed(1)}" lengthAdjust="spacingAndGlyphs" transform="rotate(90 ${x.toFixed(1)} ${cy.toFixed(1)})" ${CT}>${esc(seg.s)}</text>`;
         y += cells * adv;
       }
     }
@@ -390,6 +393,7 @@ function banxinAt(
   meta: Meta,
   folio: number,
   P: Palette,
+  latinFam: string,
   chapter?: string,
   ft: FishtailSpec = DEFAULT_FISHTAIL,
   folioOpt?: Pick<RenderOptions, 'folioStart' | 'folioNumeral' | 'showFolio'>,
@@ -418,7 +422,7 @@ function banxinAt(
   let cursor = yF + ftDepth + 14;
   for (const seg of [meta.banxinTitle, meta.banxinJuan, chapter]) {
     if (!seg) continue;
-    const r = vertText(seg, cx, cursor, g.bxFs, P.text);
+    const r = vertText(seg, cx, cursor, g.bxFs, P.text, latinFam);
     out += r.svg;
     cursor = r.next + GAP;
   }
@@ -430,7 +434,7 @@ function banxinAt(
   if (folioOpt?.showFolio !== false) {
     const n = folio + ((folioOpt?.folioStart ?? 1) - 1);
     const label = folioOpt?.folioNumeral === 'ar' ? String(n) : toCnNum(n);
-    out += vertText(label, cx, folioY, g.bxFs, P.text).svg;
+    out += vertText(label, cx, folioY, g.bxFs, P.text, latinFam).svg;
   }
   return out;
 }
@@ -448,6 +452,7 @@ function glyphs(
   P: Palette,
   showPunct: boolean,
   acc: GlyphLayers,
+  latinFam: string,
 ): void {
   // 纵向中心＝起点半格 + 占格数之半（夹注 1 格、正文 2 格、大字 4 格通用）
   const centerY = (ch: PlacedChar) => {
@@ -505,10 +510,10 @@ function glyphs(
       const span = (ch.hSpan ?? 2) * (g.cellH / 2);
       glyph = ch.upright
         ? // 縦中横：直立压入一字位
-          `<text x="${m.x}" y="${m.y}" font-size="${(m.size * 0.82).toFixed(1)}" fill="${m.fill}" font-family="${LATIN_FAMILY}" textLength="${(g.colW * 0.66).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(ch.ch)}</text>`
+          `<text x="${m.x}" y="${m.y}" font-size="${(m.size * 0.82).toFixed(1)}" fill="${m.fill}" font-family="${latinFam}" textLength="${(g.colW * 0.66).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(ch.ch)}</text>`
         : // 转 90°：沿列向横排，长度贴合所占格数
           ((fsz) =>
-            `<text x="${m.x}" y="${m.y}" font-size="${fsz.toFixed(1)}" fill="${m.fill}" font-family="${LATIN_FAMILY}" textLength="${Math.min(latinWidthEm(ch.ch) * fsz, span * 0.96).toFixed(1)}" lengthAdjust="spacingAndGlyphs" transform="rotate(90 ${m.x.toFixed(1)} ${m.y.toFixed(1)})" ${CT}>${esc(ch.ch)}</text>`)(
+            `<text x="${m.x}" y="${m.y}" font-size="${fsz.toFixed(1)}" fill="${m.fill}" font-family="${latinFam}" textLength="${Math.min(latinWidthEm(ch.ch) * fsz, span * 0.96).toFixed(1)}" lengthAdjust="spacingAndGlyphs" transform="rotate(90 ${m.x.toFixed(1)} ${m.y.toFixed(1)})" ${CT}>${esc(ch.ch)}</text>`)(
             m.size * 0.88,
           );
     } else {
@@ -571,6 +576,7 @@ export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
 // —— 单半叶：版心=折缝半列（左缘），左框开口 ——
 export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
   const g = makeGeo(o, slotsFor(o.grid.cols, 'single'), 'single');
+  const latinFam = o.latinFamily ?? o.fontFamily;
   const P = o.palette;
   const seed = contentHash([page]);
   const defs = buildDefs(g, o, seed);
@@ -582,11 +588,11 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
     const x = g.tx1 - k * g.colW;
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
-  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, o.banxinChapter, o.fishtail, o)}</g>`;
+  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, latinFam, o.banxinChapter, o.fishtail, o)}</g>`;
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colX = (i: number) => g.tx1 - (i + 1) * g.colW;
-  glyphs(page, colX, g, P, o.showPunct, layers);
+  glyphs(page, colX, g, P, o.showPunct, layers, latinFam);
   return assemble(g, o, defs, frame, layers);
 }
 
@@ -599,6 +605,7 @@ export function renderSpread(
 ): string {
   const cols = o.grid.cols;
   const g = makeGeo(o, slotsFor(cols, 'spread'), 'spread');
+  const latinFam = o.latinFamily ?? o.fontFamily;
   const P = o.palette;
   const seed = contentHash([pageR, pageL]);
   const defs = buildDefs(g, o, seed);
@@ -621,6 +628,7 @@ export function renderSpread(
     meta,
     pageR.folio,
     P,
+    latinFam,
     o.banxinChapter,
     o.fishtail,
     o,
@@ -629,7 +637,7 @@ export function renderSpread(
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colXR = (i: number) => g.tx1 - (i + 1) * g.colW;
   const colXL = (i: number) => spreadX0 + (cols - 1 - i) * g.colW;
-  glyphs(pageR, colXR, g, P, o.showPunct, layers);
-  if (pageL) glyphs(pageL, colXL, g, P, o.showPunct, layers);
+  glyphs(pageR, colXR, g, P, o.showPunct, layers, latinFam);
+  if (pageL) glyphs(pageL, colXL, g, P, o.showPunct, layers, latinFam);
   return assemble(g, o, defs, frame, layers);
 }

@@ -1,6 +1,6 @@
 import { parse } from './engine/parse';
 import { layout } from './engine/layout';
-import { renderPage, renderSpread } from './engine/svg';
+import { renderPage, renderSpread, LATIN_SERIF } from './engine/svg';
 import type { FishtailSpec } from './engine/svg';
 import { BASE_PAGE_H, SPREAD_PAGE_W } from './engine/geometry';
 import {
@@ -46,6 +46,7 @@ class AppState {
   indentSym = $state(true); // 上下对称
   chapterIndent = $state(2); // 篇题低格（字位）
   authorIndent = $state(2); // 题署距底留白（字位）
+  latinFont = $state<'cjk' | 'serif'>('cjk'); // 西文字体：随汉字／西文衬线
   charFillV = $state(0.8); // 纵向：上下字距
   charFillH = $state(0.68); // 横向：字与界行的距离
   chapterScale = $state(0.85); // 篇题字号倍率（与著者同基准，行内小字方能齐平）
@@ -113,6 +114,7 @@ class AppState {
     indentTop: this.indentTop,
     indentBottom: this.indentBottom,
     authorReserve: this.authorIndent,
+    latinFamily: this.latinFont === 'serif' ? LATIN_SERIF : undefined,
     charFillV: this.charFillV,
     charFillH: this.charFillH,
     folioStart: this.folioStart,
@@ -198,6 +200,7 @@ class AppState {
     'fishtailPairing',
     'titleScale',
     'chapterScale',
+    'latinFont',
     'charFillV',
     'charFillH',
     'authorScale',
