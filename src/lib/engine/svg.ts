@@ -20,6 +20,8 @@ export interface RenderOptions {
   folioStart?: number; // 起始页码（首叶印作几，缺省一）
   folioNumeral?: 'cn' | 'ar'; // 页码字形：中文数字／阿拉伯数字
   showFolio?: boolean; // 是否印页码，缺省印
+  indentTop?: number; // 天头留白（字位）——仅供印章等叠加层定位
+  indentBottom?: number; // 地脚留白（字位）
 }
 
 // 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
@@ -514,9 +516,9 @@ export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
     frameH: g.frameH,
     colW: g.colW,
     tx1: g.tx1,
-    ty0: g.ty0,
+    ty0: g.ty0 + (o.indentTop ?? 0) * g.cellH,
     cellH: g.cellH,
-    rows: o.grid.charsPerCol,
+    rows: o.grid.charsPerCol - (o.indentTop ?? 0) - (o.indentBottom ?? 0),
   };
 }
 

@@ -160,6 +160,7 @@ export interface ExportContext {
   uploadData: ArrayBuffer | null;
   titleScale: number;
   authorScale: number;
+  indent: { top: number; bottom: number };
 }
 
 export function planFor(
@@ -174,6 +175,7 @@ export function planFor(
     plan.grid,
     ctx.titleScale,
     ctx.authorScale,
+    ctx.indent,
   );
   const opts: RenderOptions = {
     ...ctx.render,

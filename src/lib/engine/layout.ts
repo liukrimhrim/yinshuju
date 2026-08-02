@@ -14,24 +14,33 @@ import { parsePara } from './parse';
 const SIZE: Record<CharSize | 'body', { hSpan: number; scale: number }> = {
   small: { hSpan: 1, scale: 0.55 },
   body: { hSpan: 2, scale: 1 },
-  large: { hSpan: 4, scale: 1.5 },
+  large: { hSpan: 4, scale: 1.8 }, // 占两字位，字面 1.8 倍（仍留呼吸空间）
 };
 
 // 布局引擎：块 → 逐页网格坐标（col 右起 0，half 半格游标；大字占 2 半格）
 // 几何换算（px）不在此层，见 svg.ts
+export interface Indent {
+  top: number; // 天头留白（字位，可 0.5 步进）
+  bottom: number; // 地脚留白
+}
+
 export function layout(
   blocks: Block[],
   meta: Meta,
   grid: GridParams,
   titleScale = 1,
   authorScale = 0.85,
+  indent: Indent = { top: 0, bottom: 0 },
 ): Page[] {
-  const HMAX = grid.charsPerCol * 2;
+  // 列内可排区间 [HMIN, HMAX)：留白由此扣除，全列（正文/题名/题署）一致
+  const HTOTAL = grid.charsPerCol * 2;
+  const HMIN = Math.max(0, Math.round(indent.top * 2));
+  const HMAX = Math.max(HMIN + 2, HTOTAL - Math.round(indent.bottom * 2));
   const pages: Page[] = [];
   let cur: PlacedChar[] = [];
   let curChapters: string[] = [];
   let col = 0;
-  let half = 0;
+  let half = HMIN;
   let lastBig: PlacedChar | null = null;
 
   const flushPage = () => {
@@ -39,17 +48,17 @@ export function layout(
     cur = [];
     curChapters = [];
     col = 0;
-    half = 0;
+    half = HMIN;
   };
   const advanceCol = () => {
     if (col + 1 >= grid.cols) flushPage();
     else {
       col++;
-      half = 0;
+      half = HMIN;
     }
   };
   const freshCol = () => {
-    if (half > 0) advanceCol();
+    if (half > HMIN) advanceCol();
   };
   // 特殊列文字的实际占格（半格数）——拉丁成段后字符数≠占格数
   const cellsFor = (scale: number) => Math.max(2, Math.ceil(scale * 2));
@@ -129,11 +138,11 @@ export function layout(
   };
 
   // 卷首页：列0 书名顶格，列1 著者低格（距底留二格）
-  placeRuns(parsePara(meta.title), 0, 0, 'title', titleScale);
+  placeRuns(parsePara(meta.title), 0, HMIN, 'title', titleScale);
   // 著者低格：末尾留两字位给印章，按实际占格倒推起点
   const authorRuns = parsePara(meta.author);
   const authorHalf = Math.max(
-    2,
+    HMIN + 2,
     HMAX - 4 - spanOfRuns(authorRuns, authorScale),
   );
   placeRuns(authorRuns, 1, authorHalf, 'author', authorScale);
@@ -152,14 +161,14 @@ export function layout(
     }
     if (b.type === 'author') {
       // 正文中的题署：自成一列，与卷端著者同样低格对齐（末留两字位）
-      const start = Math.max(0, HMAX - 4 - spanOfRuns(b.runs, authorScale));
+      const start = Math.max(HMIN, HMAX - 4 - spanOfRuns(b.runs, authorScale));
       placeRuns(b.runs, col, start, 'author', authorScale);
       advanceCol();
       continue;
     }
     if (b.type === 'chapter') {
       curChapters.push(b.text);
-      placeRuns(b.runs, col, 4, 'chapter'); // 低二格
+      placeRuns(b.runs, col, HMIN + 4, 'chapter'); // 低二格
       advanceCol();
       continue;
     }

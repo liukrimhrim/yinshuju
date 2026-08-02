@@ -304,6 +304,38 @@ describe('布局引擎', () => {
     );
   });
 
+  it('天地留白：对称与单边，正文/题署/书名列一并内缩', () => {
+    const g = { cols: 10, charsPerCol: 17 };
+    const HTOTAL = g.charsPerCol * 2;
+    const first = (indent: { top: number; bottom: number }) =>
+      layout(parse('甲乙'), meta, g, 1, 0.85, indent)[0]!;
+
+    const none = first({ top: 0, bottom: 0 });
+    expect(none.chars.find((c) => c.ch === '甲')!.half).toBe(0);
+    expect(none.chars.filter((c) => c.role === 'title')[0]!.half).toBe(0);
+
+    // 对称留白两字位
+    const sym = first({ top: 2, bottom: 2 });
+    expect(sym.chars.find((c) => c.ch === '甲')!.half).toBe(4);
+    expect(sym.chars.filter((c) => c.role === 'title')[0]!.half).toBe(4);
+    const authorEnd = Math.max(
+      ...sym.chars
+        .filter((c) => c.role === 'author')
+        .map((c) => c.half + (c.hSpan ?? 2)),
+    );
+    expect(authorEnd).toBe(HTOTAL - 4 - 4); // 地脚留白亦生效
+
+    // 单边：只留地脚
+    const bottomOnly = first({ top: 0, bottom: 3 });
+    expect(bottomOnly.chars.find((c) => c.ch === '甲')!.half).toBe(0);
+    const end2 = Math.max(
+      ...bottomOnly.chars
+        .filter((c) => c.role === 'author')
+        .map((c) => c.half + (c.hSpan ?? 2)),
+    );
+    expect(end2).toBe(HTOTAL - 6 - 4);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

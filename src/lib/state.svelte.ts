@@ -39,6 +39,9 @@ class AppState {
   fishtailPairing = $state<FishtailSpec['pairing']>('opposed');
   convertS2T = $state(false); // 简→繁（s2t）
   s2t = $state<((s: string) => string) | null>(null); // 转换器（懒加载后填入）
+  indentTop = $state(0); // 天头留白（字位）
+  indentBottom = $state(0); // 地脚留白
+  indentSym = $state(true); // 上下对称
   titleScale = $state(1.3); // 书名字号倍率（卷端题名多大于正文）
   authorScale = $state(0.85);
   pageIdx = $state(0);
@@ -79,6 +82,7 @@ class AppState {
       { cols: this.cols, charsPerCol: this.charsPerCol },
       this.titleScale,
       this.authorScale,
+      { top: this.indentTop, bottom: this.indentBottom },
     ),
   );
   curIdx = $derived(Math.max(0, Math.min(this.pageIdx, this.pages.length - 1)));
@@ -92,6 +96,8 @@ class AppState {
   });
   private renderOpts = $derived({
     banxinChapter: this.chapterAt,
+    indentTop: this.indentTop,
+    indentBottom: this.indentBottom,
     folioStart: this.folioStart,
     folioNumeral: this.folioNumeral,
     showFolio: this.showFolio,
@@ -175,6 +181,9 @@ class AppState {
     'fishtailPairing',
     'titleScale',
     'authorScale',
+    'indentTop',
+    'indentBottom',
+    'indentSym',
   ] as const;
 
   constructor() {
@@ -226,6 +235,7 @@ class AppState {
       meta: this.effectiveMeta,
       titleScale: this.titleScale,
       authorScale: this.authorScale,
+      indent: { top: this.indentTop, bottom: this.indentBottom },
       grid: { cols: this.cols, charsPerCol: this.charsPerCol },
       render,
       fontId: this.fontId,

@@ -163,6 +163,54 @@
   </section>
 
   <section>
+    <label class="check">
+      <input type="checkbox" bind:checked={app.indentSym} />
+      天地留白上下对称
+    </label>
+    {#if app.indentSym}
+      <label for="p-ind">天地留白 {app.indentTop} 字</label>
+      <input
+        id="p-ind"
+        type="range"
+        min="0"
+        max="6"
+        step="0.5"
+        value={app.indentTop}
+        oninput={(e) => {
+          const v = Number((e.currentTarget as HTMLInputElement).value);
+          app.indentTop = v;
+          app.indentBottom = v;
+        }}
+      />
+    {:else}
+      <div class="row">
+        <div>
+          <label for="p-it">天头留白 {app.indentTop} 字</label>
+          <input
+            id="p-it"
+            type="range"
+            min="0"
+            max="6"
+            step="0.5"
+            bind:value={app.indentTop}
+          />
+        </div>
+        <div>
+          <label for="p-ib">地脚留白 {app.indentBottom} 字</label>
+          <input
+            id="p-ib"
+            type="range"
+            min="0"
+            max="6"
+            step="0.5"
+            bind:value={app.indentBottom}
+          />
+        </div>
+      </div>
+    {/if}
+  </section>
+
+  <section>
     <div class="row">
       <div>
         <label for="p-ts">书名字号 {app.titleScale.toFixed(2)}×</label>
