@@ -2,6 +2,7 @@ import type { Meta, Page, PlacedChar } from './types';
 import type { Palette } from './themes';
 import { BASE_PAGE_H, BASE_RATIO, frameDims } from './geometry';
 import type { GridParams } from './types';
+import { latinSpan, segmentLatin } from './latin';
 
 export interface RenderOptions {
   grid: GridParams;
@@ -183,6 +184,7 @@ function douStroke(x: number, y: number, len: number, fill: string): string {
   );
 }
 
+// 版心等窄列的竖排文字：拉丁段同样縦中横/转 90°
 function vertText(
   text: string,
   x: number,
@@ -190,11 +192,25 @@ function vertText(
   size: number,
   fill: string,
 ): string {
+  const adv = size + 5;
   let out = '';
   let y = yStart;
-  for (const ch of text) {
-    out += `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" ${CT}>${esc(ch)}</text>`;
-    y += size + 5;
+  for (const seg of segmentLatin(text)) {
+    if (!seg.latin) {
+      out += `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" ${CT}>${esc(seg.s)}</text>`;
+      y += adv;
+      continue;
+    }
+    const { hSpan, upright } = latinSpan(seg.s.length);
+    const cells = hSpan / 2;
+    if (upright) {
+      out += `<text x="${x}" y="${y}" font-size="${(size * 0.82).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(size * 0.92).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(seg.s)}</text>`;
+      y += adv;
+    } else {
+      const cy = y + ((cells - 1) * adv) / 2;
+      out += `<text x="${x}" y="${cy.toFixed(1)}" font-size="${(size * 0.88).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(cells * adv * 0.9).toFixed(1)}" lengthAdjust="spacing" transform="rotate(90 ${x.toFixed(1)} ${cy.toFixed(1)})" ${CT}>${esc(seg.s)}</text>`;
+      y += cells * adv;
+    }
   }
   return out;
 }

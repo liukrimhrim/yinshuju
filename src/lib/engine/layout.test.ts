@@ -165,6 +165,24 @@ describe('布局引擎', () => {
     expect(bing.half % 2).toBe(0);
   });
 
+  it('书名/著者列的拉丁段同样成段（縦中横或转横排）', () => {
+    const m: Meta = {
+      ...meta,
+      title: '深度求索 V4',
+      author: 'DeepSeek 撰',
+    };
+    const p = layout(parse('文'), m, grid)[0]!;
+    const title = p.chars.filter((c) => c.role === 'title');
+    const v4 = title.find((c) => c.ch === 'V4')!;
+    expect(v4.kind).toBe('latin');
+    expect(v4.upright).toBe(true); // 两字符縦中横
+    const author = p.chars.filter((c) => c.role === 'author');
+    const ds = author.find((c) => c.ch === 'DeepSeek')!;
+    expect(ds.kind).toBe('latin');
+    expect(ds.upright).toBeFalsy(); // 长段转横排
+    expect(ds.hSpan).toBe(8);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

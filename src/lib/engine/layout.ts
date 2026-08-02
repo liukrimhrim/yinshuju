@@ -6,6 +6,7 @@ import type {
   Page,
   PlacedChar,
 } from './types';
+import { latinSpan, segmentLatin } from './latin';
 
 // 字号 → （占用半格数, 字号倍率）。恒守行格：小字两枚合一字位、大字独占两字位
 const SIZE: Record<CharSize | 'body', { hSpan: number; scale: number }> = {
@@ -42,6 +43,7 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
   const freshCol = () => {
     if (half > 0) advanceCol();
   };
+  // 书名/著者/篇题等特殊列：同样按拉丁成段规则排（不换列，截断保护）
   const placeVert = (
     text: string,
     atCol: number,
@@ -49,10 +51,21 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
     role: PlacedChar['role'],
   ) => {
     let h = startHalf;
-    for (const ch of text) {
-      if (h + 2 > HMAX) break; // 特殊列不换列，截断保护
-      cur.push({ kind: 'big', ch, col: atCol, half: h, role });
-      h += 2;
+    for (const seg of segmentLatin(text)) {
+      const { hSpan, upright } = seg.latin
+        ? latinSpan(seg.s.length)
+        : { hSpan: 2, upright: false };
+      if (h + hSpan > HMAX) break;
+      cur.push({
+        kind: seg.latin ? 'latin' : 'big',
+        ch: seg.s,
+        col: atCol,
+        half: h,
+        hSpan,
+        role,
+        ...(upright ? { upright: true } : {}),
+      });
+      h += hSpan;
     }
   };
 
@@ -88,9 +101,7 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
         lastBig = o;
         half += hSpan;
       } else if (r.t === 'latin') {
-        // ≤2 字符：縦中横（直立压入一字位）；更长：转 90° 横排，每字符约半格
-        const upright = r.s.length <= 2;
-        const hSpan = upright ? 2 : Math.max(2, r.s.length);
+        const { hSpan, upright } = latinSpan(r.s.length);
         const { scale } = SIZE[r.size ?? 'body'];
         if (half % 2) half++;
         if (half + hSpan > HMAX) advanceCol();

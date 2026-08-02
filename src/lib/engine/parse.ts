@@ -6,6 +6,7 @@ import type {
   Run,
   SideMark,
 } from './types';
+import { segmentLatin } from './latin';
 
 const JU = '。！？';
 const DOU = '，、；：';
@@ -74,15 +75,15 @@ function parsePara(b: string): Run[] {
       i = j < 0 ? b.length : j + 1;
       continue;
     }
-    // 连续拉丁字母/数字（含内部 . - / : 与单个空格）合成一段，整段排布
+    // 连续拉丁字母/数字合成一段，整段排布（规则见 latin.ts）
     if (/[A-Za-z0-9]/.test(c)) {
-      const m = /^[A-Za-z0-9]+(?:[.\-/:'’ ]?[A-Za-z0-9]+)*/.exec(b.slice(i))!;
+      const seg = segmentLatin(b.slice(i))[0]!;
       runs.push({
         t: 'latin',
-        s: m[0],
+        s: seg.s,
         ...(curSize ? { size: curSize } : {}),
       });
-      i += m[0].length;
+      i += seg.s.length;
       continue;
     }
     const k = punctKind(c);
