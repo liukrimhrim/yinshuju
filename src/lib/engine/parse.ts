@@ -104,8 +104,15 @@ export function parsePara(b: string): Run[] {
       continue;
     }
     // 空格留白：半角半字位、全角一字位（抬头、停顿等用）
+    // 半角空格若紧邻拉丁段则吸收——中西间距由排版自动给出，不叠加手打空格
     if (c === ' ' || c === '\u3000' || c === '\t') {
-      runs.push({ t: 'space', halves: c === '\u3000' ? 2 : 1 });
+      if (c === '\u3000') {
+        runs.push({ t: 'space', halves: 2 });
+      } else {
+        const prevLatin = runs[runs.length - 1]?.t === 'latin';
+        const nextLatin = /^[A-Za-z0-9]/.test(b.slice(i + 1));
+        if (!prevLatin && !nextLatin) runs.push({ t: 'space', halves: 1 });
+      }
       i++;
       continue;
     }

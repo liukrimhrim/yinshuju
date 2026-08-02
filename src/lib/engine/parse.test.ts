@@ -130,6 +130,19 @@ describe('markup v1 解析', () => {
     expect(texts.map((r) => r.s).join('')).toBe('见与之说');
   });
 
+  it('紧邻拉丁段的半角空格被吸收，全角空格与普通半角空格保留', () => {
+    const kinds = (src: string) => {
+      const b = parse(src)[0];
+      return b && b.type === 'para' ? b.runs.map((r) => r.t) : [];
+    };
+    // 中西之间手打的空格不叠加（间距由排版给）
+    expect(kinds('之 RAG 與')).toEqual(['text', 'latin', 'text']);
+    // 汉字之间的半角空格照旧留白
+    expect(kinds('甲 乙')).toEqual(['text', 'space', 'text']);
+    // 全角空格恒保留（显式留白）
+    expect(kinds('之\u3000RAG')).toEqual(['text', 'space', 'latin']);
+  });
+
   it('篇题按行判定：#行后无空行的正文不被吞', () => {
     const blocks = parse('# 上篇\n上德不德。\n\n下文');
     expect(blocks).toHaveLength(3);

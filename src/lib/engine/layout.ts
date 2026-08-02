@@ -243,20 +243,22 @@ export function layout(
         const { hSpan, upright } = latinSpan(r.s);
         const scale = scaleOf(r.size ?? 'body', sizes);
         if (half % 2) half++;
-        if (half + hSpan > hMax) advanceCol();
+        // 占奇数半格时，回字位的补白前后均分（否则全落在段后，中西间距一边大一边小）
+        const odd = hSpan % 2 === 1;
+        const total = hSpan + (odd ? 1 : 0);
+        if (half + total > hMax) advanceCol();
         const o: PlacedChar = {
           kind: 'latin',
           ch: r.s,
           col,
-          half,
+          half: odd ? half + 0.5 : half,
           hSpan,
           scale,
           ...(upright ? { upright: true } : {}),
         };
         cur.push(o);
         lastBig = o;
-        half += hSpan;
-        if (half % 2) half++; // 其后正文回字位
+        half += total;
       } else if (r.t === 'space') {
         half += r.halves;
         if (half >= hMax) advanceCol();

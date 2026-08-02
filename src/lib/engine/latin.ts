@@ -54,9 +54,9 @@ export const latinWidthEm = (s: string) =>
 // 纵向一半格 ≈ 字号 / (2×纵向字面率)；以名义 0.8 折算，渲染端再以 textLength 只压不拉
 const HALVES_PER_EM = 1.6;
 
-/** 拉丁段占格：≤2 字符縦中横占一字位；更长转横排，按自然宽度占格 */
+/** 拉丁段占格：≤3 字符縦中横压入一字位（无余量，中西间距最紧）；更长转横排 */
 export function latinSpan(s: string): { hSpan: number; upright: boolean } {
-  if ([...s].length <= 2) return { hSpan: 2, upright: true };
+  if ([...s].length <= 3) return { hSpan: 2, upright: true };
   return {
     hSpan: Math.max(2, Math.round(latinWidthEm(s) * HALVES_PER_EM)),
     upright: false,
