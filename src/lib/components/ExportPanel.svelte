@@ -23,8 +23,14 @@
   const safeFrame = $derived(Math.min(frameIdx, frameCount - 1));
   const previewSvg = $derived(planned.svgAt(planned.frames[safeFrame]!));
 
+  // 导出即存盘（与「导出 .txt」一致）；链接留着以便重下
   function addLink(name: string, blob: Blob) {
-    links = [...links.slice(-3), { name, url: URL.createObjectURL(blob) }];
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    links = [...links.slice(-3), { name, url }];
   }
 
   const embedWarn = (ok: boolean) => (ok ? '' : ' ⚠ 字体切片缺失，未内嵌');
@@ -168,11 +174,14 @@
   <p class="hint">打印出口仅 Chrome 保证 16×28cm 精确开本与矢量文字。</p>
 
   {#if status}<p class="status">{status}</p>{/if}
-  <div class="links">
-    {#each links as l (l.url)}
-      <a href={l.url} download={l.name}>⬇ {l.name}</a>
-    {/each}
-  </div>
+  {#if links.length}
+    <div class="links">
+      <span class="saved">已存入浏览器下载目录；点击可重下：</span>
+      {#each links as l (l.url)}
+        <a href={l.url} download={l.name}>⬇ {l.name}</a>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -218,5 +227,9 @@
     flex-direction: column;
     gap: 4px;
     font-size: 13px;
+  }
+  .saved {
+    font-size: 11px;
+    color: var(--muted);
   }
 </style>
