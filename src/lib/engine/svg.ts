@@ -409,15 +409,15 @@ function glyphs(
             colX(ch.col) +
             g.colW * (ch.sub === 'L' ? 0.26 : 0.74) +
             g.noteFs * 0.62,
-          markR: g.fs * 0.055,
+          markR: g.fs * 0.072,
         }
       : {
           size: ch.role === 'author' ? g.fs * 0.85 : g.fs * (ch.scale ?? 1),
           fill: P.text,
           x: colX(ch.col) + g.colW / 2,
           y: centerY(ch),
-          markX: colX(ch.col) + g.colW - 5,
-          markR: g.fs * 0.088,
+          markX: colX(ch.col) + g.colW - 6.4,
+          markR: g.fs * 0.115, // 圈点加大加粗，远看也醒目
         };
   const sideMark = (ch: PlacedChar, m: { y: number; size: number }): string => {
     if (ch.kind !== 'big' || !ch.mark) return '';
@@ -461,8 +461,9 @@ function glyphs(
       const my = m.y + m.size * 0.4;
       acc.marks +=
         ch.punct === 'ju'
-          ? `<circle cx="${m.markX}" cy="${my}" r="${m.markR.toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="1.5"/>`
-          : douStroke(m.markX, my, m.markR * 2.8, P.mark); // 点长≈句圈直径 1.4 倍
+          ? // 句：厚环小圈（笔画随字号走，非固定线宽）
+            `<circle cx="${m.markX}" cy="${my}" r="${(m.markR * 0.82).toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="${(m.markR * 0.56).toFixed(1)}"/>`
+          : douStroke(m.markX, my, m.markR * 2.6, P.mark); // 读：点长≈句圈直径 1.6 倍
     }
   }
 }

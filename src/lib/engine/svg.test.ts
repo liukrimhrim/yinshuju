@@ -51,8 +51,12 @@ describe('SVG 渲染', () => {
   it('句＝空心小圈，读＝顿号状水滴笔触（非圆点）', () => {
     const svg = renderPage(page, meta, opts('zhusilan'));
     const mark = THEMES.find((x) => x.id === 'zhusilan')!.palette.mark;
-    // 句：描边不填的小圈
-    expect(svg).toMatch(new RegExp(`<circle[^>]*fill="none" stroke="${mark}"`));
+    // 句：描边不填的厚环小圈（线宽随字号走，非固定值）
+    const circle = new RegExp(
+      `<circle[^>]*r="([\\d.]+)"[^>]*fill="none" stroke="${mark}" stroke-width="([\\d.]+)"`,
+    ).exec(svg)!;
+    expect(Number(circle[2])).toBeGreaterThan(2); // 笔画够粗
+    expect(Number(circle[2]) / Number(circle[1])).toBeGreaterThan(0.5); // 环厚比
     // 读：三段三次曲线闭合的毛笔点（起笔尖→按笔肥→收笔钝），实心；无圆点
     expect(svg).toMatch(
       new RegExp(
