@@ -60,3 +60,8 @@ label {
   display: block;
   margin-bottom: 4px;
 }
+
+@page {
+  size: 16cm 28cm;
+  margin: 0;
+}

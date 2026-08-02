@@ -49,6 +49,14 @@
   });
 </script>
 
+{#if app.printSvgs}
+  <div class="print-root">
+    {#each app.printSvgs as s, i (i)}
+      <div class="print-page">{@html s}</div>
+    {/each}
+  </div>
+{/if}
+
 {#if selftest}
   <div class="selftest" class:fail={!selftest.ok}>
     <strong>{selftest.detail}</strong>
@@ -142,6 +150,26 @@
     padding: 16px;
     overflow: auto;
     font-size: 18px;
+  }
+  .print-root {
+    display: none;
+  }
+  @media print {
+    .shell,
+    .selftest {
+      display: none !important;
+    }
+    .print-root {
+      display: block;
+    }
+    .print-page {
+      page-break-after: always;
+    }
+    .print-page :global(svg) {
+      display: block;
+      width: 16cm;
+      height: 28cm;
+    }
   }
   .selftest.fail {
     background: #3a1210;

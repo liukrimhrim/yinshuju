@@ -167,6 +167,20 @@ class AppState {
     this.fontId = t.defaultFont;
   }
 
+  printSvgs = $state<string[] | null>(null);
+
+  buildPrintSvgs(): string[] {
+    let chapter: string | undefined;
+    return this.pages.map((pg) => {
+      for (const c of pg.chapters) chapter = c;
+      return renderPage(pg, this.meta, {
+        ...this.renderOpts,
+        banxinChapter: this.banxinChapter ? chapter : undefined,
+        overlays: pg.folio === 1 ? this.sealLayer.single : '',
+      });
+    });
+  }
+
   get exportCtx() {
     const { grid: _g, ...render } = this.renderOpts;
     return {

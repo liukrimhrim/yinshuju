@@ -211,11 +211,34 @@ function glyphs(
           markX: colX(ch.col) + g.colW - 5,
           markR: g.fs * 0.088,
         };
+  const sideMark = (ch: PlacedChar, m: { y: number; size: number }): string => {
+    if (ch.kind !== 'big' || !ch.mark) return '';
+    const x = colX(ch.col) + g.colW - 2.5;
+    const y0 = m.y - g.cellH / 2 + 2;
+    const y1 = m.y + g.cellH / 2 - 2;
+    switch (ch.mark) {
+      case 'line': // 专名直线
+        return `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="${P.text}" stroke-width="1.3"/>`;
+      case 'book': {
+        // 书名波浪线：四段交替摆动
+        const seg = (y1 - y0) / 4;
+        let d = `M${x},${y0}`;
+        for (let s = 0; s < 4; s++)
+          d += ` Q${x + (s % 2 ? -2.2 : 2.2)},${y0 + seg * (s + 0.5)} ${x},${y0 + seg * (s + 1)}`;
+        return `<path d="${d}" fill="none" stroke="${P.text}" stroke-width="1.2"/>`;
+      }
+      case 'circle': // 着重圈注
+        return `<circle cx="${x}" cy="${m.y}" r="${(m.size * 0.11).toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="1.3"/>`;
+      case 'dot': // 着重点注
+        return `<circle cx="${x}" cy="${m.y}" r="${(m.size * 0.07).toFixed(1)}" fill="${P.mark}"/>`;
+    }
+  };
+
   for (const ch of page.chars) {
     const m = metrics(ch);
     const glyph = `<text x="${m.x}" y="${m.y}" font-size="${m.size.toFixed(1)}" fill="${m.fill}" ${CT}>${esc(ch.ch)}</text>`;
     if (ch.kind === 'note') acc.noteText += glyph;
-    else acc.bigText += glyph;
+    else acc.bigText += glyph + sideMark(ch, m);
     if (ch.punct && showPunct) {
       const my = m.y + m.size * 0.4;
       acc.marks +=

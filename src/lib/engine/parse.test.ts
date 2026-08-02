@@ -10,7 +10,7 @@ describe('markup v1 解析', () => {
   });
 
   it('现代标点映射句读：。！？→句，，、；：→读，其余丢弃', () => {
-    const blocks = parse('天地？人、鬼《神》…');
+    const blocks = parse('天地？人、鬼「神」…');
     const runs = blocks[0]?.type === 'para' ? blocks[0].runs : [];
     expect(runs).toEqual([
       { t: 'text', s: '天' },
@@ -64,6 +64,35 @@ describe('markup v1 解析', () => {
       { t: 'text', s: '神' },
       { t: 'text', s: '怪' },
     ]);
+  });
+
+  it('markup v2 旁线：《书名线》｛圈注｝＜点注＞［专名线］', () => {
+    const blocks = parse('读《鬼谷子》者｛慎｝之＜勿＞轻［王詡］也');
+    const runs = blocks[0]?.type === 'para' ? blocks[0].runs : [];
+    const texts = runs.filter((r) => r.t === 'text') as {
+      t: 'text';
+      s: string;
+      mark?: string;
+    }[];
+    expect(texts.find((r) => r.s === '鬼')?.mark).toBe('book');
+    expect(texts.find((r) => r.s === '子')?.mark).toBe('book');
+    expect(texts.find((r) => r.s === '慎')?.mark).toBe('circle');
+    expect(texts.find((r) => r.s === '勿')?.mark).toBe('dot');
+    expect(texts.find((r) => r.s === '詡')?.mark).toBe('line');
+    expect(texts.find((r) => r.s === '读')?.mark).toBeUndefined();
+    expect(texts.find((r) => r.s === '也')?.mark).toBeUndefined();
+  });
+
+  it('旁线标记内的标点照常映射并附着', () => {
+    const blocks = parse('《鬼谷子。》后');
+    const runs = blocks[0]?.type === 'para' ? blocks[0].runs : [];
+    expect(runs.some((r) => r.t === 'punct' && r.kind === 'ju')).toBe(true);
+  });
+
+  it('未闭合旁线标记吃到块尾，不炸', () => {
+    const blocks = parse('读《鬼谷子');
+    const runs = blocks[0]?.type === 'para' ? blocks[0].runs : [];
+    expect(runs).toHaveLength(4);
   });
 
   it('篇题按行判定：#行后无空行的正文不被吞', () => {

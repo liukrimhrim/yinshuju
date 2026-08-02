@@ -8,9 +8,12 @@ export interface Meta {
 }
 
 export type Run =
-  | { t: 'text'; s: string }
+  | { t: 'text'; s: string; mark?: SideMark }
   | { t: 'note'; chars: NoteChar[] } // 双行小字夹注
   | { t: 'punct'; kind: PunctKind }; // 句读，附着于前一大字
+
+// 旁线标记（markup v2，vRain 体系）：书名波浪线/着重圈注/点注/专名直线，画在字右侧
+export type SideMark = 'book' | 'circle' | 'dot' | 'line';
 
 export type PunctKind = 'ju' | 'dou'; // 句=○ 读=丶
 
@@ -31,6 +34,7 @@ export interface PlacedChar {
   half: number; // 半格游标（一整字占 2 半格）
   sub?: 'R' | 'L'; // 夹注子列，右先
   punct?: PunctKind; // 附着此字的句读
+  mark?: SideMark; // 旁线标记（书名线等）
   role?: 'title' | 'author' | 'chapter'; // 特殊列文字；正文无 role
 }
 

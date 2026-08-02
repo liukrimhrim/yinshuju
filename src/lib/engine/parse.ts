@@ -1,4 +1,4 @@
-import type { Block, NoteChar, PunctKind, Run } from './types';
+import type { Block, NoteChar, PunctKind, Run, SideMark } from './types';
 
 const JU = '。！？';
 const DOU = '，、；：';
@@ -25,11 +25,31 @@ function parseNote(s: string): NoteChar[] {
   return out;
 }
 
+// 旁线标记括对（markup v2）：全角专用，半角照旧丢弃
+const MARK_OPEN: Record<string, SideMark> = {
+  '《': 'book',
+  '｛': 'circle',
+  '＜': 'dot',
+  '［': 'line',
+};
+const MARK_CLOSE = new Set(['》', '｝', '＞', '］']);
+
 function parsePara(b: string): Run[] {
   const runs: Run[] = [];
+  let curMark: SideMark | null = null;
   let i = 0;
   while (i < b.length) {
     const c = b[i]!;
+    if (MARK_OPEN[c] && !curMark) {
+      curMark = MARK_OPEN[c]!;
+      i++;
+      continue;
+    }
+    if (MARK_CLOSE.has(c)) {
+      curMark = null;
+      i++;
+      continue;
+    }
     if (c === '（' || c === '(') {
       const close = c === '（' ? '）' : ')';
       const j = b.indexOf(close, i + 1);
@@ -40,7 +60,8 @@ function parsePara(b: string): Run[] {
     }
     const k = punctKind(c);
     if (k) runs.push({ t: 'punct', kind: k });
-    else if (!/\s/.test(c) && !isDropped(c)) runs.push({ t: 'text', s: c });
+    else if (!/\s/.test(c) && !isDropped(c))
+      runs.push({ t: 'text', s: c, ...(curMark ? { mark: curMark } : {}) });
     i++;
   }
   return runs;

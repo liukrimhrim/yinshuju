@@ -58,6 +58,16 @@
       status = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}${sealWarn()}`;
     });
 
+  async function doPrint() {
+    app.printSvgs = app.buildPrintSvgs();
+    window.addEventListener('afterprint', () => (app.printSvgs = null), {
+      once: true,
+    });
+    await new Promise((r) => setTimeout(r, 50));
+    await document.fonts.ready;
+    window.print();
+  }
+
   const doPdf = () =>
     run(async () => {
       const t0 = performance.now();
@@ -153,6 +163,9 @@
   <button disabled={busy} onclick={doPdf}
     >导出 PDF（全部 {app.pages.length} 叶）</button
   >
+  <button disabled={busy} onclick={doPrint}>打印（Chrome 矢量 PDF 增强）</button
+  >
+  <p class="hint">打印出口仅 Chrome 保证 16×28cm 精确开本与矢量文字。</p>
 
   {#if status}<p class="status">{status}</p>{/if}
   <div class="links">

@@ -60,7 +60,13 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
       if (r.t === 'text') {
         if (half % 2) half++;
         if (half >= HMAX) advanceCol();
-        const o: PlacedChar = { kind: 'big', ch: r.s, col, half };
+        const o: PlacedChar = {
+          kind: 'big',
+          ch: r.s,
+          col,
+          half,
+          ...(r.mark ? { mark: r.mark } : {}),
+        };
         cur.push(o);
         lastBig = o;
         half += 2;

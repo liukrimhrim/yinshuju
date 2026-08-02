@@ -9,7 +9,7 @@ import type { FontId } from './engine/themes';
 import type { PDFObject, PDFPage } from 'pdf-lib';
 import type { Font } from 'opentype.js';
 import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
-import { pageGeo } from './engine/svg';
+import { contentSeed, pageGeo } from './engine/svg';
 
 export interface RatioPreset {
   id: string;
@@ -41,6 +41,39 @@ const sliceB64Cache = new Map<string, string>();
 
 const UPLOAD_EMBED_LIMIT = 8 * 1024 * 1024;
 
+// 运行时子集化上传字体：只留用到的字形（opentype.js 重组，输出 CFF-OTF）
+let subsetCache: { key: string; b64: string } | null = null;
+async function subsetUploadB64(
+  data: ArrayBuffer,
+  text: string,
+): Promise<string | null> {
+  const key = data.byteLength + ':' + contentSeed(text);
+  if (subsetCache?.key === key) return subsetCache.b64;
+  try {
+    const opentype = await import('opentype.js');
+    const src = opentype.parse(data);
+    const glyphs = [src.glyphs.get(0)]; // .notdef
+    for (const ch of new Set([...text])) {
+      const gi = src.charToGlyphIndex(ch);
+      if (gi > 0) glyphs.push(src.glyphs.get(gi));
+    }
+    if (glyphs.length < 2) return null;
+    const sub = new opentype.Font({
+      familyName: 'User Upload',
+      styleName: 'Regular',
+      unitsPerEm: src.unitsPerEm,
+      ascender: src.ascender,
+      descender: src.descender,
+      glyphs,
+    });
+    const b64 = bufToB64(sub.toArrayBuffer());
+    subsetCache = { key, b64 };
+    return b64;
+  } catch {
+    return null; // 结构异常字体 → 走整包降级链
+  }
+}
+
 function bufToB64(buf: ArrayBuffer): string {
   let bin = '';
   const bytes = new Uint8Array(buf);
@@ -56,8 +89,12 @@ async function fontCSSFor(
 ): Promise<string> {
   if (fontId === 'serif') return '';
   if (fontId === 'upload') {
-    // 上传字体：≤8MB 整包内嵌（运行时子集化留后续）；超限返回空 → 降级警示
-    if (!uploadData || uploadData.byteLength > UPLOAD_EMBED_LIMIT) return '';
+    if (!uploadData) return '';
+    // 首选运行时子集（几百 KB）；子集失败且 ≤8MB 时整包兜底
+    const subB64 = await subsetUploadB64(uploadData, usedText);
+    if (subB64)
+      return `@font-face{font-family:'User Upload';src:url(data:font/otf;base64,${subB64});}`;
+    if (uploadData.byteLength > UPLOAD_EMBED_LIMIT) return '';
     const tag = new TextDecoder('latin1').decode(uploadData.slice(0, 4));
     const mime = tag === 'OTTO' ? 'font/otf' : 'font/ttf';
     return `@font-face{font-family:'User Upload';src:url(data:${mime};base64,${bufToB64(uploadData)});}`;

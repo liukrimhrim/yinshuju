@@ -39,4 +39,4 @@ A/B 不被 C 的授权复核阻塞。
 
 ---
 
-**建造完成记录（2026-07-31/08-01）**：A/B/C/D 四里程碑全部交付并上线 https://liukrimhrim.github.io/yinshuju/ （Actions 自动部署）。每里程碑均过两轴 code-review。**D 挂账销账（2026-08-01）**：TW-Kai 已入切片（兜底链+印章退印真楷）✓；用户上传字体（会话级，≤8MB 导出整包内嵌，运行时子集化留后续）✓；Safari 实测经 ?selftest 钩子完成 ✓（SELFTEST OK 1280×2240，字体内嵌成功，WebKit 无需 text→path 兜底——路线头号风险关闭）。**仍挂**：浏览器打印矢量增强、上传字体运行时子集化、markup v2 旁线集。
+**建造完成记录（2026-07-31/08-01）**：A/B/C/D 四里程碑全部交付并上线 https://liukrimhrim.github.io/yinshuju/ （Actions 自动部署）。每里程碑均过两轴 code-review。**D 挂账销账（2026-08-01）**：TW-Kai 已入切片（兜底链+印章退印真楷）✓；用户上传字体（会话级，≤8MB 导出整包内嵌，运行时子集化留后续）✓；Safari 实测经 ?selftest 钩子完成 ✓（SELFTEST OK 1280×2240，字体内嵌成功，WebKit 无需 text→path 兜底——路线头号风险关闭）。**全部挂账清零（2026-08-01）**：浏览器打印矢量增强 ✓（打印视图逐叶输出 + `@page 16cm 28cm`，Chrome 出矢量文字）、上传字体运行时子集化 ✓（opentype.js 重组，21.8MB 字体导出降到 0.36MB）、markup v2 旁线集 ✓（书名线/专名线/圈注/点注，见 markup-v1.md v2 增补）。
