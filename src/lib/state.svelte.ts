@@ -31,6 +31,9 @@ class AppState {
   textureStrength = $state(0.6);
   showPunct = $state(true);
   banxinChapter = $state(false); // 篇题自动入版心
+  folioStart = $state(1);
+  folioNumeral = $state<'cn' | 'ar'>('cn');
+  showFolio = $state(true);
   fishtailCount = $state<1 | 2>(1);
   fishtailStyle = $state<FishtailSpec['style']>('black');
   fishtailPairing = $state<FishtailSpec['pairing']>('opposed');
@@ -74,6 +77,9 @@ class AppState {
   });
   private renderOpts = $derived({
     banxinChapter: this.chapterAt,
+    folioStart: this.folioStart,
+    folioNumeral: this.folioNumeral,
+    showFolio: this.showFolio,
     fishtail: {
       count: this.fishtailCount,
       style: this.fishtailStyle,
@@ -146,6 +152,9 @@ class AppState {
     'showPunct',
     'banxinChapter',
     'convertS2T',
+    'folioStart',
+    'folioNumeral',
+    'showFolio',
     'fishtailCount',
     'fishtailStyle',
     'fishtailPairing',

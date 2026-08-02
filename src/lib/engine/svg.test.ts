@@ -268,10 +268,42 @@ describe('SVG 渲染', () => {
     expect(firstOf('捭闔')).toBeGreaterThan(lastOf('卷之二十八'));
   });
 
+  it('页码可手动设置：起始号、阿拉伯数字、隐藏', () => {
+    const base = opts('zhusilan');
+    const inBanxin = (svg: string) =>
+      /<g clip-path="url\(#pc\)">([\s\S]*?)<\/g>/
+        .exec(svg)![1]!
+        .match(/>([^<]+)</g)
+        ?.join('') ?? '';
+
+    // 首叶起始号 15 → 印「十五」
+    const s15 = renderPage(page, meta, { ...base, folioStart: 15 });
+    expect(inBanxin(s15)).toContain('十');
+    expect(inBanxin(s15)).toContain('五');
+
+    // 阿拉伯数字
+    const sAr = renderPage(page, meta, {
+      ...base,
+      folioStart: 15,
+      folioNumeral: 'ar',
+    });
+    expect(inBanxin(sAr)).toContain('1');
+    expect(inBanxin(sAr)).toContain('5');
+
+    // 关闭则不印
+    const sOff = renderPage(page, meta, { ...base, showFolio: false });
+    const withFolio = renderPage(page, meta, base);
+    expect(inBanxin(sOff).length).toBeLessThan(inBanxin(withFolio).length);
+  });
+
   it('toCnNum：一位/十位/两位', () => {
     expect(toCnNum(1)).toBe('一');
     expect(toCnNum(10)).toBe('十');
     expect(toCnNum(13)).toBe('十三');
     expect(toCnNum(23)).toBe('二十三');
+    expect(toCnNum(100)).toBe('一百');
+    expect(toCnNum(105)).toBe('一百零五');
+    expect(toCnNum(115)).toBe('一百十五');
+    expect(toCnNum(1000)).toBe('1000'); // 超域退回阿拉伯
   });
 });

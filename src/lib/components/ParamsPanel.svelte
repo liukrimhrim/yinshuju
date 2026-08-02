@@ -163,6 +163,34 @@
   </section>
 
   <section>
+    <label class="check">
+      <input type="checkbox" bind:checked={app.showFolio} />
+      版心印页码
+    </label>
+    {#if app.showFolio}
+      <div class="row">
+        <div>
+          <label for="p-folio">起始页码（首叶印作）</label>
+          <input
+            id="p-folio"
+            type="number"
+            min="1"
+            max="999"
+            bind:value={app.folioStart}
+          />
+        </div>
+        <div>
+          <label for="p-folio-n">字形</label>
+          <select id="p-folio-n" bind:value={app.folioNumeral}>
+            <option value="cn">中文数字</option>
+            <option value="ar">阿拉伯数字</option>
+          </select>
+        </div>
+      </div>
+    {/if}
+  </section>
+
+  <section>
     <label for="p-font">字体</label>
     <select id="p-font" bind:value={app.fontId}>
       {#each FONTS as f (f.id)}

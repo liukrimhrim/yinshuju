@@ -17,6 +17,9 @@ export interface RenderOptions {
   overlays?: string; // 叠加层（印章等），已定位的 SVG 片段
   banxinChapter?: string; // 可选：当前篇题入版心（vRain 章回机制）
   fishtail?: FishtailSpec; // 鱼尾形制；缺省=单黑鱼尾（历代最普遍）
+  folioStart?: number; // 起始页码（首叶印作几，缺省一）
+  folioNumeral?: 'cn' | 'ar'; // 页码字形：中文数字／阿拉伯数字
+  showFolio?: boolean; // 是否印页码，缺省印
 }
 
 // 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
@@ -37,14 +40,23 @@ const LOWER_FISHTAIL_POS = 0.62;
 
 const CN_DIGITS = '一二三四五六七八九';
 export function toCnNum(n: number): string {
-  if (n <= 0 || n > 99) return String(n);
+  if (n <= 0 || n > 999) return String(n);
   if (n < 10) return CN_DIGITS[n - 1]!;
-  const tens = Math.floor(n / 10);
-  const ones = n % 10;
+  if (n < 100) {
+    const tens = Math.floor(n / 10);
+    const ones = n % 10;
+    return (
+      (tens > 1 ? CN_DIGITS[tens - 1]! : '') +
+      '十' +
+      (ones ? CN_DIGITS[ones - 1]! : '')
+    );
+  }
+  const hundreds = Math.floor(n / 100);
+  const rest = n % 100;
+  if (!rest) return CN_DIGITS[hundreds - 1]! + '百';
+  // 十位为零则补「零」：一百零五
   return (
-    (tens > 1 ? CN_DIGITS[tens - 1]! : '') +
-    '十' +
-    (ones ? CN_DIGITS[ones - 1]! : '')
+    CN_DIGITS[hundreds - 1]! + '百' + (rest < 10 ? '零' : '') + toCnNum(rest)
   );
 }
 
@@ -341,6 +353,7 @@ function banxinAt(
   P: Palette,
   chapter?: string,
   ft: FishtailSpec = DEFAULT_FISHTAIL,
+  folioOpt?: Pick<RenderOptions, 'folioStart' | 'folioNumeral' | 'showFolio'>,
 ): string {
   const ftDepth = g.colW * 0.44; // 鱼尾带高（范例为扁带，非高块）
   const ftNotch = ftDepth * 0.86; // 叉口几乎切穿整带，两侧只余细尖
@@ -375,7 +388,11 @@ function banxinAt(
     ft.count === 2
       ? yLower + ftDepth + 14
       : g.fy0 + 0.75 * g.frameH + g.bxFs * 0.9;
-  out += vertText(toCnNum(folio), cx, folioY, g.bxFs, P.text).svg;
+  if (folioOpt?.showFolio !== false) {
+    const n = folio + ((folioOpt?.folioStart ?? 1) - 1);
+    const label = folioOpt?.folioNumeral === 'ar' ? String(n) : toCnNum(n);
+    out += vertText(label, cx, folioY, g.bxFs, P.text).svg;
+  }
   return out;
 }
 
@@ -517,7 +534,7 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
     const x = g.tx1 - k * g.colW;
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
-  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, o.banxinChapter, o.fishtail)}</g>`;
+  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, o.banxinChapter, o.fishtail, o)}</g>`;
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colX = (i: number) => g.tx1 - (i + 1) * g.colW;
@@ -558,6 +575,7 @@ export function renderSpread(
     P,
     o.banxinChapter,
     o.fishtail,
+    o,
   );
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
