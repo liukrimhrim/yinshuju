@@ -133,15 +133,33 @@
         />
       </div>
     </div>
-    <label for="p-fill">字距疏密 {app.charFill.toFixed(2)}（越小越疏朗）</label>
-    <input
-      id="p-fill"
-      type="range"
-      min="0.6"
-      max="0.95"
-      step="0.01"
-      bind:value={app.charFill}
-    />
+    <div class="row">
+      <div>
+        <label for="p-fv">纵向字距 {app.charFillV.toFixed(2)}</label>
+        <input
+          id="p-fv"
+          type="range"
+          min="0.55"
+          max="0.95"
+          step="0.01"
+          bind:value={app.charFillV}
+        />
+      </div>
+      <div>
+        <label for="p-fh">横向字距 {app.charFillH.toFixed(2)}</label>
+        <input
+          id="p-fh"
+          type="range"
+          min="0.45"
+          max="0.92"
+          step="0.01"
+          bind:value={app.charFillH}
+        />
+      </div>
+    </div>
+    <p class="hint">
+      值＝字面占格比：纵向控上下字距、横向控字与界行的距离；二者不等即成长体/扁体。
+    </p>
     {#if outOfCanon}
       <p class="warn">超出常见刻本制式（8–15 行 × 16–22 字），照排不误</p>
     {/if}

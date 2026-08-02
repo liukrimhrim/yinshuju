@@ -23,7 +23,8 @@ export interface RenderOptions {
   indentTop?: number; // 天头留白（字位）——仅供印章等叠加层定位
   indentBottom?: number; // 地脚留白（字位）
   authorReserve?: number; // 题署距底留白（字位）——印章槽位据此上移
-  charFill?: number; // 字面率：字面高 / 一字格高，越小越疏朗（默认 0.80）
+  charFillV?: number; // 纵向：字高 / 一字格高（默认 0.80）——控上下字距
+  charFillH?: number; // 横向：字宽 / 列宽（默认 0.68）——控字与界行的距离
 }
 
 // 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
@@ -96,6 +97,7 @@ interface Geo {
   tx1: number; // 正文区右缘（列自此向左排）
   ty0: number; // 正文区上缘
   fs: number;
+  sx: number; // 字形横向缩放
   noteFs: number;
   bxFs: number;
 }
@@ -124,7 +126,9 @@ function makeGeo(
   const usableH = frameH - 2 * pad.vert;
   const colW = usableW / slots;
   const cellH = usableH / o.grid.charsPerCol;
-  const fs = Math.min(colW * 0.78, cellH * (o.charFill ?? 0.8)); // 字面留呼吸空间，避免贴框贴线
+  // 纵向定字号，横向定字宽；二者不等则字形横向压缩/舒展（长体/扁体，刻本常式）
+  const fs = cellH * (o.charFillV ?? 0.8);
+  const glyphW = colW * (o.charFillH ?? 0.68); // 字面留呼吸空间，避免贴框贴线
   return {
     pageW,
     pageH,
@@ -137,6 +141,7 @@ function makeGeo(
     tx1: fx0 + frameW - pad.side,
     ty0: fy0 + pad.vert,
     fs,
+    sx: glyphW / fs, // 横向缩放（1＝方形字）
     noteFs: fs * 0.5,
     bxFs: Math.min(17, fs * 0.44),
   };
@@ -502,7 +507,12 @@ function glyphs(
         : // 转 90°：沿列向横排，长度贴合所占格数
           `<text x="${m.x}" y="${m.y}" font-size="${(m.size * 0.88).toFixed(1)}" fill="${m.fill}" font-family="${LATIN_FAMILY}" textLength="${(span * 0.94).toFixed(1)}" lengthAdjust="spacing" transform="rotate(90 ${m.x.toFixed(1)} ${m.y.toFixed(1)})" ${CT}>${esc(ch.ch)}</text>`;
     } else {
-      glyph = `<text x="${m.x}" y="${m.y}" font-size="${m.size.toFixed(1)}" fill="${m.fill}" ${CT}>${esc(ch.ch)}</text>`;
+      const sx = g.sx;
+      const tf =
+        Math.abs(sx - 1) < 0.001
+          ? ''
+          : ` transform="translate(${(m.x * (1 - sx)).toFixed(2)},0) scale(${sx.toFixed(3)},1)"`;
+      glyph = `<text x="${m.x}" y="${m.y}" font-size="${m.size.toFixed(1)}" fill="${m.fill}"${tf} ${CT}>${esc(ch.ch)}</text>`;
     }
     if (ch.kind === 'note') acc.noteText += glyph;
     else acc.bigText += glyph + sideMark(ch, m);

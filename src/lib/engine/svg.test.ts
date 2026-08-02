@@ -313,6 +313,33 @@ describe('SVG 渲染', () => {
     expect(fs('鬼')).toBeGreaterThan(fs('子'));
   });
 
+  it('横纵字距分开控制：纵向定字号、横向定字宽（不等则加横向缩放）', () => {
+    const base = opts('zhusilan');
+    const fsOf = (svg: string) =>
+      Math.max(
+        ...[...svg.matchAll(/font-size="([\d.]+)"/g)].map((m) => Number(m[1])),
+      );
+
+    // 纵向变小 → 字号变小
+    const v80 = renderPage(page, meta, { ...base, charFillV: 0.8 });
+    const v60 = renderPage(page, meta, { ...base, charFillV: 0.6 });
+    expect(fsOf(v60)).toBeLessThan(fsOf(v80));
+
+    // 默认横纵相配：缩放接近 1（方形字）
+    const sxOf = (svg: string) =>
+      Number(/scale\(([\d.]+),1\)/.exec(svg)?.[1] ?? '1');
+    expect(Math.abs(sxOf(v80) - 1)).toBeLessThan(0.05);
+    const narrow = renderPage(page, meta, {
+      ...base,
+      charFillV: 0.8,
+      charFillH: 0.5,
+    });
+    expect(narrow).toMatch(
+      /transform="translate\([-\d.]+,0\) scale\(0\.\d+,1\)"/,
+    );
+    expect(fsOf(narrow)).toBe(fsOf(v80)); // 字号不受横向影响
+  });
+
   it('toCnNum：一位/十位/两位', () => {
     expect(toCnNum(1)).toBe('一');
     expect(toCnNum(10)).toBe('十');
