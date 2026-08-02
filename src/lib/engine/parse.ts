@@ -21,13 +21,22 @@ function punctKind(c: string): PunctKind | null {
 
 function parseNote(s: string): NoteChar[] {
   const out: NoteChar[] = [];
-  for (const c of s) {
+  let size: CharSize | undefined;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]!;
+    if (c === '*') {
+      const double = s[i + 1] === '*';
+      const want: CharSize = double ? 'large' : 'small';
+      size = size === want ? undefined : want;
+      if (double) i++;
+      continue;
+    }
     const k = punctKind(c);
     if (k) {
       const last = out[out.length - 1];
       if (last) last.punct = k; // 注内句读附着前一注字；开头孤标点丢弃
     } else if (!/\s/.test(c) && !isDropped(c)) {
-      out.push({ ch: c });
+      out.push({ ch: c, ...(size ? { size } : {}) });
     }
   }
   return out;

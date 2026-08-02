@@ -11,11 +11,17 @@ import { latinSpan, segmentLatin } from './latin';
 import { parsePara } from './parse';
 
 // 字号 → （占用半格数, 字号倍率）。恒守行格：小字两枚合一字位、大字独占两字位
-const SIZE: Record<CharSize | 'body', { hSpan: number; scale: number }> = {
-  small: { hSpan: 1, scale: 0.55 },
-  body: { hSpan: 2, scale: 1 },
-  large: { hSpan: 4, scale: 1.8 }, // 占两字位，字面 1.8 倍（仍留呼吸空间）
-};
+export interface SizeScales {
+  small: number; // *小字* 倍率
+  large: number; // **大字** 倍率
+}
+export const DEFAULT_SIZES: SizeScales = { small: 0.55, large: 1.8 };
+
+// 占格＝ceil(倍率×2) 半格：小字合占一字位、正文一字位、大字随倍率占两格以上
+const scaleOf = (k: CharSize | 'body', s: SizeScales) =>
+  k === 'small' ? s.small : k === 'large' ? s.large : 1;
+const spanOfScale = (scale: number) =>
+  scale < 1 ? 1 : Math.max(2, Math.ceil(scale * 2));
 
 // 布局引擎：块 → 逐页网格坐标（col 右起 0，half 半格游标；大字占 2 半格）
 // 几何换算（px）不在此层，见 svg.ts
@@ -31,6 +37,7 @@ export function layout(
   titleScale = 1,
   authorScale = 0.85,
   indent: Indent = { top: 0, bottom: 0 },
+  sizes: SizeScales = DEFAULT_SIZES,
 ): Page[] {
   // 列内可排区间 [HMIN, HMAX)：留白由此扣除，全列（正文/题名/题署）一致
   const HTOTAL = grid.charsPerCol * 2;
@@ -77,7 +84,8 @@ export function layout(
     r.t === 'latin'
       ? latinSpan(r.s.length).hSpan
       : cellsFor(
-          baseScale * SIZE[r.t === 'text' ? (r.size ?? 'body') : 'body'].scale,
+          baseScale *
+            scaleOf(r.t === 'text' ? (r.size ?? 'body') : 'body', sizes),
         );
   const spanOfRuns = (runs: Run[], baseScale = 1) =>
     runs.reduce((n, r) => {
@@ -116,6 +124,7 @@ export function layout(
           cur.push({
             kind: 'note',
             ch: nc.ch,
+            ...(nc.size ? { scale: scaleOf(nc.size, sizes) } : {}),
             col: atCol,
             half: h + (j < rlen ? j : j - rlen),
             hSpan: 1,
@@ -137,7 +146,7 @@ export function layout(
         col: atCol,
         half: h,
         hSpan,
-        scale: baseScale * SIZE[r.size ?? 'body'].scale,
+        scale: baseScale * scaleOf(r.size ?? 'body', sizes),
         role,
         ...(upright ? { upright: true } : {}),
       };
@@ -193,7 +202,8 @@ export function layout(
     }
     for (const r of b.runs) {
       if (r.t === 'text') {
-        const { hSpan, scale } = SIZE[r.size ?? 'body'];
+        const scale = scaleOf(r.size ?? 'body', sizes);
+        const hSpan = spanOfScale(scale);
         if (hSpan > 1 && half % 2) half++; // 正文与大字须对齐字位
         if (half + hSpan > hMax) advanceCol();
         const o: PlacedChar = {
@@ -210,7 +220,7 @@ export function layout(
         half += hSpan;
       } else if (r.t === 'latin') {
         const { hSpan, upright } = latinSpan(r.s.length);
-        const { scale } = SIZE[r.size ?? 'body'];
+        const scale = scaleOf(r.size ?? 'body', sizes);
         if (half % 2) half++;
         if (half + hSpan > hMax) advanceCol();
         const o: PlacedChar = {
@@ -245,6 +255,7 @@ export function layout(
             cur.push({
               kind: 'note',
               ch: nc.ch,
+              ...(nc.size ? { scale: scaleOf(nc.size, sizes) } : {}),
               col,
               half: half + (j < rlen ? j : j - rlen),
               sub: j < rlen ? 'R' : 'L',

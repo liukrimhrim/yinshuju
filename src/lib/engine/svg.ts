@@ -448,7 +448,7 @@ function glyphs(
   const metrics = (ch: PlacedChar) =>
     ch.kind === 'note'
       ? {
-          size: g.noteFs,
+          size: g.noteFs * (ch.scale ?? 1),
           fill: P.note,
           x: colX(ch.col) + g.colW * (ch.sub === 'L' ? 0.26 : 0.74),
           y: centerY(ch),

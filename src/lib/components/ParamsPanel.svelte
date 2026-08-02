@@ -163,6 +163,33 @@
   </section>
 
   <section>
+    <div class="row">
+      <div>
+        <label for="p-sl">**大字** {app.sizeLarge.toFixed(2)}×</label>
+        <input
+          id="p-sl"
+          type="range"
+          min="1.1"
+          max="3"
+          step="0.05"
+          bind:value={app.sizeLarge}
+        />
+      </div>
+      <div>
+        <label for="p-ss">*小字* {app.sizeSmall.toFixed(2)}×</label>
+        <input
+          id="p-ss"
+          type="range"
+          min="0.35"
+          max="0.9"
+          step="0.05"
+          bind:value={app.sizeSmall}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section>
     <label class="check">
       <input type="checkbox" bind:checked={app.indentSym} />
       天地留白上下对称

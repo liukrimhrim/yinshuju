@@ -25,6 +25,7 @@ export type PunctKind = 'ju' | 'dou'; // 句=○ 读=丶
 export interface NoteChar {
   ch: string;
   punct?: PunctKind; // 注内句读，附着于本注字
+  size?: CharSize; // 注内字号标记（*小* / **大**，相对夹注字号）
 }
 
 export type Block =

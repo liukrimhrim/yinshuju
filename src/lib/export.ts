@@ -161,6 +161,7 @@ export interface ExportContext {
   titleScale: number;
   authorScale: number;
   indent: { top: number; bottom: number };
+  sizes: { small: number; large: number };
 }
 
 export function planFor(
@@ -176,6 +177,7 @@ export function planFor(
     ctx.titleScale,
     ctx.authorScale,
     ctx.indent,
+    ctx.sizes,
   );
   const opts: RenderOptions = {
     ...ctx.render,
