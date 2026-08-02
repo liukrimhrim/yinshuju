@@ -157,6 +157,7 @@ export interface SealGeo {
   frameW: number;
   frameH: number;
   colW: number;
+  tx1: number; // 正文区右缘
 }
 
 export function sealOverlaysFor(
@@ -169,15 +170,15 @@ export function sealOverlaysFor(
   const size = geo.colW * 0.92;
   const slotBase: Record<SealSpec['slot'], { x: number; y: number }> = {
     authorBelow: {
-      x: geo.fx0 + geo.frameW - 2 * geo.colW + (geo.colW - size) / 2,
+      x: geo.tx1 - 2 * geo.colW + (geo.colW - size) / 2,
       y: geo.fy0 + geo.frameH * 0.8,
     },
     juanshou: {
-      x: geo.fx0 + geo.frameW - geo.colW + (geo.colW - size) / 2,
+      x: geo.tx1 - geo.colW + (geo.colW - size) / 2,
       y: geo.fy0 + geo.frameH * 0.86,
     },
     tiantou: {
-      x: geo.fx0 + geo.frameW - size * 1.05,
+      x: geo.tx1 - size * 1.05,
       y: geo.fy0 - size * 1.18,
     },
   };

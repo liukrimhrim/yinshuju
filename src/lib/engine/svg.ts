@@ -58,18 +58,35 @@ interface Geo {
   frameH: number;
   colW: number;
   cellH: number;
+  tx1: number; // 正文区右缘（列自此向左排）
+  ty0: number; // 正文区上缘
   fs: number;
   noteFs: number;
   bxFs: number;
 }
 
-function makeGeo(o: RenderOptions, slots: number): Geo {
+// 框内留白：刻本正文不贴版框。右侧还须避开双边内线（renderPage 画在 5.5+框宽/2 处）
+const INNER_LINE_OFFSET = 5.5;
+const padOf = (frameWidth: number) => ({
+  side: INNER_LINE_OFFSET + frameWidth + 3,
+  vert: frameWidth / 2 + 5,
+});
+
+function makeGeo(
+  o: RenderOptions,
+  slots: number,
+  mode: 'single' | 'spread',
+): Geo {
   const pageH = o.pageH ?? BASE_PAGE_H;
   const pageW = o.pageW ?? Math.round(BASE_PAGE_H * BASE_RATIO);
   const { frameW, frameH, fx0, fy0 } = frameDims(pageW, pageH);
-  const colW = frameW / slots;
-  const cellH = frameH / o.grid.charsPerCol;
-  const fs = Math.min(colW * 0.8, cellH * 0.91);
+  const pad = padOf(o.frameWidth);
+  // 单叶：仅右侧有内线（左缘是折缝）；对开：左右都有
+  const usableW = frameW - (mode === 'spread' ? 2 * pad.side : pad.side);
+  const usableH = frameH - 2 * pad.vert;
+  const colW = usableW / slots;
+  const cellH = usableH / o.grid.charsPerCol;
+  const fs = Math.min(colW * 0.78, cellH * 0.86); // 字面留呼吸空间，避免贴框贴线
   return {
     pageW,
     pageH,
@@ -79,6 +96,8 @@ function makeGeo(o: RenderOptions, slots: number): Geo {
     frameH,
     colW,
     cellH,
+    tx1: fx0 + frameW - pad.side,
+    ty0: fy0 + pad.vert,
     fs,
     noteFs: fs * 0.5,
     bxFs: Math.min(17, fs * 0.44),
@@ -196,7 +215,7 @@ function glyphs(
           size: g.noteFs,
           fill: P.note,
           x: colX(ch.col) + g.colW * (ch.sub === 'L' ? 0.26 : 0.74),
-          y: g.fy0 + ch.half * (g.cellH / 2) + g.cellH / 4,
+          y: g.ty0 + ch.half * (g.cellH / 2) + g.cellH / 4,
           markX:
             colX(ch.col) +
             g.colW * (ch.sub === 'L' ? 0.26 : 0.74) +
@@ -207,13 +226,13 @@ function glyphs(
           size: ch.role === 'author' ? g.fs * 0.85 : g.fs,
           fill: P.text,
           x: colX(ch.col) + g.colW / 2,
-          y: g.fy0 + (ch.half / 2) * g.cellH + g.cellH / 2,
+          y: g.ty0 + (ch.half / 2) * g.cellH + g.cellH / 2,
           markX: colX(ch.col) + g.colW - 5,
           markR: g.fs * 0.088,
         };
   const sideMark = (ch: PlacedChar, m: { y: number; size: number }): string => {
     if (ch.kind !== 'big' || !ch.mark) return '';
-    const x = colX(ch.col) + g.colW - 2.5;
+    const x = colX(ch.col) + g.colW - 2;
     const y0 = m.y - g.cellH / 2 + 2;
     const y1 = m.y + g.cellH / 2 - 2;
     switch (ch.mark) {
@@ -270,19 +289,20 @@ function assemble(
 
 // 摆位几何（印章等叠加层用）：与渲染同一套公式
 export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
-  const g = makeGeo(o, slotsFor(o.grid.cols, mode));
+  const g = makeGeo(o, slotsFor(o.grid.cols, mode), mode);
   return {
     fx0: g.fx0,
     fy0: g.fy0,
     frameW: g.frameW,
     frameH: g.frameH,
     colW: g.colW,
+    tx1: g.tx1,
   };
 }
 
 // —— 单半叶：版心=折缝半列（左缘），左框开口 ——
 export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
-  const g = makeGeo(o, slotsFor(o.grid.cols, 'single'));
+  const g = makeGeo(o, slotsFor(o.grid.cols, 'single'), 'single');
   const P = o.palette;
   const seed = contentHash([page]);
   const defs = buildDefs(g, o, seed);
@@ -291,13 +311,13 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
   const innerX = g.fx0 + g.frameW - 5.5 - o.frameWidth / 2;
   frame += `<line x1="${innerX}" y1="${g.fy0}" x2="${innerX}" y2="${g.fy0 + g.frameH}" stroke="${P.frame}" stroke-width="1.1"/>`;
   for (let k = 1; k <= o.grid.cols; k++) {
-    const x = g.fx0 + g.frameW - k * g.colW;
+    const x = g.tx1 - k * g.colW;
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
   frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, o.banxinChapter)}</g>`;
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
-  const colX = (i: number) => g.fx0 + g.frameW - (i + 1) * g.colW;
+  const colX = (i: number) => g.tx1 - (i + 1) * g.colW;
   glyphs(page, colX, g, P, o.showPunct, layers);
   return assemble(g, o, defs, frame, layers);
 }
@@ -310,7 +330,7 @@ export function renderSpread(
   o: RenderOptions,
 ): string {
   const cols = o.grid.cols;
-  const g = makeGeo(o, slotsFor(cols, 'spread'));
+  const g = makeGeo(o, slotsFor(cols, 'spread'), 'spread');
   const P = o.palette;
   const seed = contentHash([pageR, pageL]);
   const defs = buildDefs(g, o, seed);
@@ -321,16 +341,17 @@ export function renderSpread(
     g.fx0 + g.frameW - 5.5 - o.frameWidth / 2,
   ])
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.frame}" stroke-width="1.1"/>`;
+  const spreadX0 = g.tx1 - (2 * cols + 1) * g.colW; // 正文区左缘
   for (let m = 1; m <= 2 * cols; m++) {
-    const x = g.fx0 + m * g.colW;
+    const x = spreadX0 + m * g.colW;
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
-  const bxCenter = g.fx0 + (cols + 0.5) * g.colW;
+  const bxCenter = spreadX0 + (cols + 0.5) * g.colW;
   frame += banxinAt(bxCenter, g, meta, pageR.folio, P, o.banxinChapter);
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
-  const colXR = (i: number) => g.fx0 + g.frameW - (i + 1) * g.colW;
-  const colXL = (i: number) => g.fx0 + (cols - 1 - i) * g.colW;
+  const colXR = (i: number) => g.tx1 - (i + 1) * g.colW;
+  const colXL = (i: number) => spreadX0 + (cols - 1 - i) * g.colW;
   glyphs(pageR, colXR, g, P, o.showPunct, layers);
   if (pageL) glyphs(pageL, colXL, g, P, o.showPunct, layers);
   return assemble(g, o, defs, frame, layers);

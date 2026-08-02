@@ -109,6 +109,28 @@ describe('SVG 渲染', () => {
     expect(svg).toContain('viewBox="0 0 517 1120"');
   });
 
+  it('正文不贴版框：首列末字与框线之间留白（含粗框做旧主题）', () => {
+    for (const theme of ['zhusilan', 'zuojiu']) {
+      const o = opts(theme);
+      const svg = renderPage(page, meta, o);
+      // 版框右缘 x（rect/path 的最大 x）与正文首列字的 x + 半字宽比较
+      const glyphs = [
+        ...svg.matchAll(
+          /<text x="([\d.]+)" y="([\d.]+)" font-size="([\d.]+)"/g,
+        ),
+      ].map((m) => ({ x: Number(m[1]), y: Number(m[2]), fs: Number(m[3]) }));
+      const maxFs = Math.max(...glyphs.map((g) => g.fs));
+      const big = glyphs.filter((g) => g.fs === maxFs);
+      const rightMost = Math.max(...big.map((g) => g.x));
+      const topMost = Math.min(...big.map((g) => g.y));
+      const frameRight = 640 - (640 - 0.7 * 0.68 * 1120) / 2;
+      const frameTop = ((1120 - 0.68 * 1120) * 1.5) / 2.5;
+      // 字面右缘/上缘须离框线至少 3u
+      expect(frameRight - (rightMost + maxFs / 2)).toBeGreaterThan(3);
+      expect(topMost - maxFs / 2 - frameTop).toBeGreaterThan(3);
+    }
+  });
+
   it('toCnNum：一位/十位/两位', () => {
     expect(toCnNum(1)).toBe('一');
     expect(toCnNum(10)).toBe('十');
