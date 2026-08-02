@@ -1,6 +1,7 @@
 import { parse } from './engine/parse';
 import { layout } from './engine/layout';
 import { renderPage, renderSpread } from './engine/svg';
+import type { FishtailSpec } from './engine/svg';
 import { BASE_PAGE_H, SPREAD_PAGE_W } from './engine/geometry';
 import {
   THEMES,
@@ -30,6 +31,9 @@ class AppState {
   textureStrength = $state(0.6);
   showPunct = $state(true);
   banxinChapter = $state(false); // 篇题自动入版心
+  fishtailCount = $state<1 | 2>(1);
+  fishtailStyle = $state<FishtailSpec['style']>('black');
+  fishtailPairing = $state<FishtailSpec['pairing']>('opposed');
   convertS2T = $state(false); // 简→繁（s2t）
   converted = $state(''); // 转换结果（异步填充）
   pageIdx = $state(0);
@@ -70,6 +74,11 @@ class AppState {
   });
   private renderOpts = $derived({
     banxinChapter: this.chapterAt,
+    fishtail: {
+      count: this.fishtailCount,
+      style: this.fishtailStyle,
+      pairing: this.fishtailPairing,
+    },
     grid: { cols: this.cols, charsPerCol: this.charsPerCol },
     palette: this.palette,
     frameWidth: this.theme.frameWidth,
@@ -137,6 +146,9 @@ class AppState {
     'showPunct',
     'banxinChapter',
     'convertS2T',
+    'fishtailCount',
+    'fishtailStyle',
+    'fishtailPairing',
   ] as const;
 
   constructor() {

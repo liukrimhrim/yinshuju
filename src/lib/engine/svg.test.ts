@@ -151,6 +151,49 @@ describe('SVG 渲染', () => {
     expect(Number(rect[1])).toBeGreaterThan(10);
   });
 
+  it('鱼尾形制：单尾带 3/4 横线；双尾两枚；对尾下枚镜像、顺尾同向', () => {
+    const tails = (svg: string) =>
+      [...svg.matchAll(/<path d="M-?[\d.]+,[\d.]+ h[\d.]+ v(-?[\d.]+)/g)].map(
+        (m) => Number(m[1]),
+      );
+    const single = renderPage(page, meta, opts('zhusilan'));
+    expect(tails(single)).toHaveLength(1);
+    expect(single).toContain('stroke-width="1"'); // 单尾本 3/4 横细线
+
+    const opposed = renderPage(page, meta, {
+      ...opts('zhusilan'),
+      fishtail: { count: 2, style: 'black', pairing: 'opposed' },
+    });
+    const o = tails(opposed);
+    expect(o).toHaveLength(2);
+    expect(Math.sign(o[0]!)).toBe(1); // 上尾向下
+    expect(Math.sign(o[1]!)).toBe(-1); // 下尾镜像（尾尖相向）
+
+    const aligned = renderPage(page, meta, {
+      ...opts('zhusilan'),
+      fishtail: { count: 2, style: 'black', pairing: 'aligned' },
+    });
+    expect(tails(aligned).map(Math.sign)).toEqual([1, 1]); // 顺鱼尾同向
+  });
+
+  it('鱼尾样式：白尾线描不填色，花尾带纸色人字饰', () => {
+    const white = renderPage(page, meta, {
+      ...opts('zhusilan'),
+      fishtail: { count: 1, style: 'white', pairing: 'opposed' },
+    });
+    expect(white).toMatch(
+      /<path d="M-?[\d.]+,[\d.]+ h[\d.]+ v[\d.]+[^"]*" fill="none" stroke=/,
+    );
+
+    const flower = renderPage(page, meta, {
+      ...opts('zhusilan'),
+      fishtail: { count: 1, style: 'flower', pairing: 'opposed' },
+    });
+    const paper = THEMES.find((x) => x.id === 'zhusilan')!.palette.paper;
+    expect(flower).toContain(`stroke="${paper}"`); // 人字饰用纸色
+    expect(flower).toContain('stroke-linejoin="round"');
+  });
+
   it('toCnNum：一位/十位/两位', () => {
     expect(toCnNum(1)).toBe('一');
     expect(toCnNum(10)).toBe('十');

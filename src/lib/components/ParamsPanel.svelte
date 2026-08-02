@@ -139,6 +139,29 @@
   </section>
 
   <section>
+    <label for="p-ft">版心鱼尾</label>
+    <div class="row" id="p-ft">
+      <select bind:value={app.fishtailCount}>
+        <option value={1}>单鱼尾</option>
+        <option value={2}>双鱼尾</option>
+      </select>
+      <select bind:value={app.fishtailStyle}>
+        <option value="black">黑鱼尾（实心）</option>
+        <option value="white">白鱼尾（线描）</option>
+        <option value="flower">花鱼尾（带饰）</option>
+      </select>
+    </div>
+    {#if app.fishtailCount === 2}
+      <select bind:value={app.fishtailPairing}>
+        <option value="opposed">对鱼尾（尾尖相向）</option>
+        <option value="aligned">顺鱼尾（同向）</option>
+      </select>
+    {:else}
+      <p class="hint">单尾本另加版心 3/4 处横细线（常式）</p>
+    {/if}
+  </section>
+
+  <section>
     <label for="p-font">字体</label>
     <select id="p-font" bind:value={app.fontId}>
       {#each FONTS as f (f.id)}

@@ -15,9 +15,24 @@ export interface RenderOptions {
   pageH?: number;
   overlays?: string; // 叠加层（印章等），已定位的 SVG 片段
   banxinChapter?: string; // 可选：当前篇题入版心（vRain 章回机制）
+  fishtail?: FishtailSpec; // 鱼尾形制；缺省=单黑鱼尾（历代最普遍）
 }
 
-const FISHTAIL_POS = 0.25;
+// 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
+export interface FishtailSpec {
+  count: 1 | 2;
+  style: 'black' | 'white' | 'flower';
+  pairing: 'aligned' | 'opposed';
+}
+
+export const DEFAULT_FISHTAIL: FishtailSpec = {
+  count: 1,
+  style: 'black',
+  pairing: 'opposed',
+};
+
+const FISHTAIL_POS = 0.25; // 上鱼尾顶距版心顶 1/4（规范票 §1）
+const LOWER_FISHTAIL_POS = 0.62;
 
 const CN_DIGITS = '一二三四五六七八九';
 export function toCnNum(n: number): string {
@@ -166,6 +181,36 @@ function vertText(
 }
 
 // 版心内容（鱼尾 + 简名卷次 + 页码），中心线在 cx；单叶模式配合 clip 只露右半
+// 一枚鱼尾：tipsUp=false 尾尖朝下（常式），true 为镜像（对鱼尾的下尾）
+function fishtail(
+  cx: number,
+  yTop: number,
+  w: number,
+  depth: number,
+  notch: number,
+  tipsUp: boolean,
+  style: FishtailSpec['style'],
+  P: Palette,
+): string {
+  const d = tipsUp
+    ? `M${cx - w / 2},${yTop + depth} h${w} v${-depth} l${-w / 2},${notch} l${-w / 2},${-notch} z`
+    : `M${cx - w / 2},${yTop} h${w} v${depth} l${-w / 2},${-notch} l${-w / 2},${notch} z`;
+  if (style === 'white')
+    return `<path d="${d}" fill="none" stroke="${P.frame}" stroke-width="1.6"/>`;
+  let out = `<path d="${d}" fill="${P.frame}"/>`;
+  if (style === 'flower') {
+    // 花鱼尾：实心内嵌两道纸色人字饰
+    const dir = tipsUp ? -1 : 1;
+    const baseY = tipsUp ? yTop + depth : yTop;
+    for (const k of [0.34, 0.6]) {
+      const y0 = baseY + dir * depth * k;
+      const y1 = y0 - dir * notch * 0.45;
+      out += `<path d="M${cx - w / 2 + w * 0.12},${y0} L${cx},${y1} L${cx + w / 2 - w * 0.12},${y0}" fill="none" stroke="${P.paper}" stroke-width="${(w * 0.055).toFixed(1)}" stroke-linejoin="round"/>`;
+    }
+  }
+  return out;
+}
+
 function banxinAt(
   cx: number,
   g: Geo,
@@ -173,11 +218,27 @@ function banxinAt(
   folio: number,
   P: Palette,
   chapter?: string,
+  ft: FishtailSpec = DEFAULT_FISHTAIL,
 ): string {
   const ftDepth = g.colW * 0.6; // 鱼尾总深
   const ftNotch = g.colW * 0.42; // 尾尖凹口深
   const yF = g.fy0 + FISHTAIL_POS * g.frameH;
-  let out = `<path d="M${cx - g.colW / 2},${yF} h${g.colW} v${ftDepth} l${-g.colW / 2},${-ftNotch} l${-g.colW / 2},${ftNotch} z" fill="${P.frame}"/>`;
+  const yLower = g.fy0 + LOWER_FISHTAIL_POS * g.frameH;
+  let out = fishtail(cx, yF, g.colW, ftDepth, ftNotch, false, ft.style, P);
+  if (ft.count === 2)
+    out += fishtail(
+      cx,
+      yLower,
+      g.colW,
+      ftDepth,
+      ftNotch,
+      ft.pairing === 'opposed', // 对鱼尾：下尾尖相向朝上；顺鱼尾：同向朝下
+      ft.style,
+      P,
+    );
+  else
+    // 单尾本常式：版心约 3/4 处一道横细线（规范票 §2）
+    out += `<line x1="${cx - g.colW / 2}" y1="${g.fy0 + 0.75 * g.frameH}" x2="${cx + g.colW / 2}" y2="${g.fy0 + 0.75 * g.frameH}" stroke="${P.frame}" stroke-width="1"/>`;
   out += vertText(meta.banxinTitle, cx, yF + ftDepth + 14, g.bxFs, P.text);
   out += vertText(
     meta.banxinJuan,
@@ -194,7 +255,12 @@ function banxinAt(
       g.bxFs,
       P.text,
     );
-  out += vertText(toCnNum(folio), cx, g.fy0 + g.frameH * 0.78, g.bxFs, P.text);
+  // 页码：单尾在 3/4 横线下；双尾在下鱼尾之下
+  const folioY =
+    ft.count === 2
+      ? yLower + ftDepth + 14
+      : g.fy0 + 0.75 * g.frameH + g.bxFs * 0.9;
+  out += vertText(toCnNum(folio), cx, folioY, g.bxFs, P.text);
   return out;
 }
 
@@ -320,7 +386,7 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
     const x = g.tx1 - k * g.colW;
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
-  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, o.banxinChapter)}</g>`;
+  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, o.banxinChapter, o.fishtail)}</g>`;
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colX = (i: number) => g.tx1 - (i + 1) * g.colW;
@@ -353,7 +419,15 @@ export function renderSpread(
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
   const bxCenter = spreadX0 + (cols + 0.5) * g.colW;
-  frame += banxinAt(bxCenter, g, meta, pageR.folio, P, o.banxinChapter);
+  frame += banxinAt(
+    bxCenter,
+    g,
+    meta,
+    pageR.folio,
+    P,
+    o.banxinChapter,
+    o.fishtail,
+  );
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colXR = (i: number) => g.tx1 - (i + 1) * g.colW;
