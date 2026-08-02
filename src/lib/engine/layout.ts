@@ -91,7 +91,7 @@ export function layout(
   // 按 run 排（篇题/题署行支持行内字号与拉丁成段）；不换列，截断保护
   const runSpan = (r: Run, baseScale: number) =>
     r.t === 'latin'
-      ? latinSpan(r.s.length).hSpan
+      ? latinSpan(r.s).hSpan
       : cellsFor(
           baseScale *
             scaleOf(r.t === 'text' ? (r.size ?? 'body') : 'body', sizes),
@@ -148,7 +148,7 @@ export function layout(
       }
       const hSpan = runSpan(r, baseScale);
       if (h + hSpan > hMax) break;
-      const upright = r.t === 'latin' && latinSpan(r.s.length).upright;
+      const upright = r.t === 'latin' && latinSpan(r.s).upright;
       const placed: PlacedChar = {
         kind: r.t === 'latin' ? 'latin' : 'big',
         ch: r.s,
@@ -240,7 +240,7 @@ export function layout(
         lastBig = o;
         half += hSpan;
       } else if (r.t === 'latin') {
-        const { hSpan, upright } = latinSpan(r.s.length);
+        const { hSpan, upright } = latinSpan(r.s);
         const scale = scaleOf(r.size ?? 'body', sizes);
         if (half % 2) half++;
         if (half + hSpan > hMax) advanceCol();

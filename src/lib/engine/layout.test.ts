@@ -169,7 +169,7 @@ describe('布局引擎', () => {
     expect(short.hSpan).toBe(2); // 压进一字位
     const long = all.find((c) => c.kind === 'latin' && c.ch === 'GPT-4.5')!;
     expect(long.upright).toBeFalsy();
-    expect(long.hSpan).toBe(7); // 每字符约半格
+    expect(long.hSpan).toBe(6); // 按自然宽度占格（GPT-4.5 ≈3.6em）
     // 其后正文回到字位对齐
     const bing = all.find((c) => c.ch === '丙')!;
     expect(bing.half % 2).toBe(0);
@@ -190,7 +190,7 @@ describe('布局引擎', () => {
     const ds = author.find((c) => c.ch === 'DeepSeek')!;
     expect(ds.kind).toBe('latin');
     expect(ds.upright).toBeFalsy(); // 长段转横排
-    expect(ds.hSpan).toBe(8);
+    expect(ds.hSpan).toBe(7); // DeepSeek 自然宽度约 4.3em
   });
 
   it('著者列按实际占格倒推起点：末尾恒留两字位给印章（含拉丁段）', () => {

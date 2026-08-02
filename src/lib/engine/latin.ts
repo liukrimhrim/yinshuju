@@ -26,9 +26,39 @@ export function segmentLatin(text: string): Segment[] {
   return out;
 }
 
-/** 拉丁段占格：≤2 字符縦中横占一字位；更长转横排，每字符约半格 */
-export function latinSpan(len: number): { hSpan: number; upright: boolean } {
-  return len <= 2
-    ? { hSpan: 2, upright: true }
-    : { hSpan: Math.max(2, len), upright: false };
+// 比例衬线的字符宽度估值（em）——按此定长，避免用 textLength 拉伸字距
+const WIDTH_EM: Record<string, number> = {
+  ' ': 0.25,
+  '.': 0.27,
+  ',': 0.27,
+  ':': 0.27,
+  '-': 0.33,
+  '/': 0.28,
+  "'": 0.22,
+  '’': 0.22,
+};
+const widthOfChar = (c: string) => {
+  const w = WIDTH_EM[c];
+  if (w !== undefined) return w;
+  if (/[0-9]/.test(c)) return 0.5;
+  if (/[A-Z]/.test(c)) return 0.68;
+  if (/[ijltfr]/.test(c)) return 0.32;
+  if (/[mw]/.test(c)) return 0.78;
+  return 0.5; // 其余小写
+};
+
+/** 拉丁段的自然宽度（em，相对其自身字号） */
+export const latinWidthEm = (s: string) =>
+  [...s].reduce((n, c) => n + widthOfChar(c), 0);
+
+// 纵向一半格 ≈ 字号 / (2×纵向字面率)；以名义 0.8 折算，渲染端再以 textLength 只压不拉
+const HALVES_PER_EM = 1.6;
+
+/** 拉丁段占格：≤2 字符縦中横占一字位；更长转横排，按自然宽度占格 */
+export function latinSpan(s: string): { hSpan: number; upright: boolean } {
+  if ([...s].length <= 2) return { hSpan: 2, upright: true };
+  return {
+    hSpan: Math.max(2, Math.round(latinWidthEm(s) * HALVES_PER_EM)),
+    upright: false,
+  };
 }

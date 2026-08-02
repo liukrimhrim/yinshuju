@@ -2,7 +2,7 @@ import type { Meta, Page, PlacedChar } from './types';
 import type { Palette } from './themes';
 import { BASE_PAGE_H, BASE_RATIO, frameDims } from './geometry';
 import type { GridParams } from './types';
-import { latinSpan, segmentLatin } from './latin';
+import { latinSpan, latinWidthEm, segmentLatin } from './latin';
 
 export interface RenderOptions {
   grid: GridParams;
@@ -249,14 +249,16 @@ function vertText(
         y += adv;
         continue;
       }
-      const { hSpan, upright } = latinSpan(seg.s.length);
+      const { hSpan, upright } = latinSpan(seg.s);
       const cells = hSpan / 2;
       if (upright) {
         out += `<text x="${x}" y="${y}" font-size="${(size * 0.82).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(size * 0.92).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(seg.s)}</text>`;
         y += adv;
       } else {
         const cy = y + ((cells - 1) * adv) / 2;
-        out += `<text x="${x}" y="${cy.toFixed(1)}" font-size="${(size * 0.88).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(cells * adv * 0.9).toFixed(1)}" lengthAdjust="spacing" transform="rotate(90 ${x.toFixed(1)} ${cy.toFixed(1)})" ${CT}>${esc(seg.s)}</text>`;
+        const fsz = size * 0.88;
+        const len = Math.min(latinWidthEm(seg.s) * fsz, cells * adv * 0.94);
+        out += `<text x="${x}" y="${cy.toFixed(1)}" font-size="${fsz.toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${len.toFixed(1)}" lengthAdjust="spacingAndGlyphs" transform="rotate(90 ${x.toFixed(1)} ${cy.toFixed(1)})" ${CT}>${esc(seg.s)}</text>`;
         y += cells * adv;
       }
     }
@@ -505,7 +507,10 @@ function glyphs(
         ? // 縦中横：直立压入一字位
           `<text x="${m.x}" y="${m.y}" font-size="${(m.size * 0.82).toFixed(1)}" fill="${m.fill}" font-family="${LATIN_FAMILY}" textLength="${(g.colW * 0.66).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(ch.ch)}</text>`
         : // 转 90°：沿列向横排，长度贴合所占格数
-          `<text x="${m.x}" y="${m.y}" font-size="${(m.size * 0.88).toFixed(1)}" fill="${m.fill}" font-family="${LATIN_FAMILY}" textLength="${(span * 0.94).toFixed(1)}" lengthAdjust="spacing" transform="rotate(90 ${m.x.toFixed(1)} ${m.y.toFixed(1)})" ${CT}>${esc(ch.ch)}</text>`;
+          ((fsz) =>
+            `<text x="${m.x}" y="${m.y}" font-size="${fsz.toFixed(1)}" fill="${m.fill}" font-family="${LATIN_FAMILY}" textLength="${Math.min(latinWidthEm(ch.ch) * fsz, span * 0.96).toFixed(1)}" lengthAdjust="spacingAndGlyphs" transform="rotate(90 ${m.x.toFixed(1)} ${m.y.toFixed(1)})" ${CT}>${esc(ch.ch)}</text>`)(
+            m.size * 0.88,
+          );
     } else {
       const sx = g.sx;
       const tf =
