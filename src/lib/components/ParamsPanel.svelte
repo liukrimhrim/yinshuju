@@ -133,6 +133,15 @@
         />
       </div>
     </div>
+    <label for="p-fill">字距疏密 {app.charFill.toFixed(2)}（越小越疏朗）</label>
+    <input
+      id="p-fill"
+      type="range"
+      min="0.6"
+      max="0.95"
+      step="0.01"
+      bind:value={app.charFill}
+    />
     {#if outOfCanon}
       <p class="warn">超出常见刻本制式（8–15 行 × 16–22 字），照排不误</p>
     {/if}

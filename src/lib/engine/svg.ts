@@ -23,6 +23,7 @@ export interface RenderOptions {
   indentTop?: number; // 天头留白（字位）——仅供印章等叠加层定位
   indentBottom?: number; // 地脚留白（字位）
   authorReserve?: number; // 题署距底留白（字位）——印章槽位据此上移
+  charFill?: number; // 字面率：字面高 / 一字格高，越小越疏朗（默认 0.80）
 }
 
 // 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
@@ -123,7 +124,7 @@ function makeGeo(
   const usableH = frameH - 2 * pad.vert;
   const colW = usableW / slots;
   const cellH = usableH / o.grid.charsPerCol;
-  const fs = Math.min(colW * 0.78, cellH * 0.86); // 字面留呼吸空间，避免贴框贴线
+  const fs = Math.min(colW * 0.78, cellH * (o.charFill ?? 0.8)); // 字面留呼吸空间，避免贴框贴线
   return {
     pageW,
     pageH,
