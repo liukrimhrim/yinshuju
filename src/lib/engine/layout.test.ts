@@ -249,6 +249,23 @@ describe('布局引擎', () => {
     expect(jia.col).toBeGreaterThan(cols[0]!);
   });
 
+  it('篇题行/题署行支持行内标记：星号不入字，字号生效', () => {
+    const p = layout(parse('# **捭闔**第一\n> *唐*李白撰'), meta, {
+      cols: 10,
+      charsPerCol: 17,
+    })[0]!;
+    const chapter = p.chars.filter((c) => c.role === 'chapter');
+    expect(chapter.map((c) => c.ch).join('')).toBe('捭闔第一'); // 无 *
+    expect(chapter.find((c) => c.ch === '捭')!.scale).toBeGreaterThan(
+      chapter.find((c) => c.ch === '第')!.scale!,
+    );
+    const inline = p.chars.filter((c) => c.role === 'author' && c.col >= 2);
+    expect(inline.map((c) => c.ch).join('')).toBe('唐李白撰');
+    expect(inline.find((c) => c.ch === '唐')!.scale).toBeLessThan(
+      inline.find((c) => c.ch === '李')!.scale!,
+    );
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

@@ -1,6 +1,7 @@
 import type {
   Block,
   CharSize,
+  Run,
   GridParams,
   Meta,
   Page,
@@ -60,6 +61,44 @@ export function layout(
         0,
       );
 
+  // 按 run 排（篇题/题署行支持行内字号与拉丁成段）；不换列，截断保护
+  const runSpan = (r: Run, baseScale: number) =>
+    r.t === 'latin'
+      ? latinSpan(r.s.length).hSpan
+      : cellsFor(
+          baseScale * SIZE[r.t === 'text' ? (r.size ?? 'body') : 'body'].scale,
+        );
+  const spanOfRuns = (runs: Run[], baseScale = 1) =>
+    runs
+      .filter((r) => r.t === 'text' || r.t === 'latin')
+      .reduce((n, r) => n + runSpan(r, baseScale), 0);
+  const placeRuns = (
+    runs: Run[],
+    atCol: number,
+    startHalf: number,
+    role: PlacedChar['role'],
+    baseScale = 1,
+  ) => {
+    let h = startHalf;
+    for (const r of runs) {
+      if (r.t !== 'text' && r.t !== 'latin') continue; // 题名列不排夹注/句读
+      const hSpan = runSpan(r, baseScale);
+      if (h + hSpan > HMAX) break;
+      const upright = r.t === 'latin' && latinSpan(r.s.length).upright;
+      cur.push({
+        kind: r.t === 'latin' ? 'latin' : 'big',
+        ch: r.s,
+        col: atCol,
+        half: h,
+        hSpan,
+        scale: baseScale * SIZE[r.size ?? 'body'].scale,
+        role,
+        ...(upright ? { upright: true } : {}),
+      });
+      h += hSpan;
+    }
+  };
+
   // 书名/著者/篇题等特殊列：同样按拉丁成段规则排（不换列，截断保护）
   const placeVert = (
     text: string,
@@ -112,14 +151,14 @@ export function layout(
     }
     if (b.type === 'author') {
       // 正文中的题署：自成一列，与卷端著者同样低格对齐（末留两字位）
-      const start = Math.max(0, HMAX - 4 - spanOfText(b.text, authorScale));
-      placeVert(b.text, col, start, 'author', authorScale);
+      const start = Math.max(0, HMAX - 4 - spanOfRuns(b.runs, authorScale));
+      placeRuns(b.runs, col, start, 'author', authorScale);
       advanceCol();
       continue;
     }
     if (b.type === 'chapter') {
       curChapters.push(b.text);
-      placeVert(b.text, col, 4, 'chapter'); // 低二格
+      placeRuns(b.runs, col, 4, 'chapter'); // 低二格
       advanceCol();
       continue;
     }

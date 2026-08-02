@@ -5,7 +5,7 @@ describe('markup v1 解析', () => {
   it('空行分块，# 行为篇题', () => {
     const blocks = parse('# 捭闔第一\n\n粤若稽古。');
     expect(blocks).toHaveLength(2);
-    expect(blocks[0]).toEqual({ type: 'chapter', text: '捭闔第一' });
+    expect(blocks[0]).toMatchObject({ type: 'chapter', text: '捭闔第一' });
     expect(blocks[1]?.type).toBe('para');
   });
 
@@ -133,7 +133,7 @@ describe('markup v1 解析', () => {
   it('篇题按行判定：#行后无空行的正文不被吞', () => {
     const blocks = parse('# 上篇\n上德不德。\n\n下文');
     expect(blocks).toHaveLength(3);
-    expect(blocks[0]).toEqual({ type: 'chapter', text: '上篇' });
+    expect(blocks[0]).toMatchObject({ type: 'chapter', text: '上篇' });
     expect(blocks[1]?.type).toBe('para');
     const runs = blocks[1]?.type === 'para' ? blocks[1].runs : [];
     expect(runs[0]).toEqual({ t: 'text', s: '上' });

@@ -42,7 +42,11 @@ const MARK_OPEN: Record<string, SideMark> = {
 };
 const MARK_CLOSE = new Set(['》', '｝', '＞', '］']);
 
-function parsePara(b: string): Run[] {
+// 纯文本（去掉行内标记）——供 PDF 书签与版心篇题使用
+const plainOf = (runs: Run[]) =>
+  runs.map((r) => (r.t === 'text' || r.t === 'latin' ? r.s : '')).join('');
+
+export function parsePara(b: string): Run[] {
   const runs: Run[] = [];
   let curMark: SideMark | null = null;
   let curSize: CharSize | null = null;
@@ -128,15 +132,14 @@ export function parse(src: string): Block[] {
     }
     if (line.trim().startsWith('>')) {
       flush();
-      blocks.push({
-        type: 'author',
-        text: line.trim().replace(/^>+\s*/, ''),
-      });
+      const runs = parsePara(line.trim().replace(/^>+\s*/, ''));
+      blocks.push({ type: 'author', text: plainOf(runs), runs });
       continue;
     }
     if (line.trim().startsWith('#')) {
       flush();
-      blocks.push({ type: 'chapter', text: line.trim().replace(/^#+\s*/, '') });
+      const runs = parsePara(line.trim().replace(/^#+\s*/, ''));
+      blocks.push({ type: 'chapter', text: plainOf(runs), runs });
     } else {
       paraLines.push(line);
     }
