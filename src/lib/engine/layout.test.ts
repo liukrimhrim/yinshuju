@@ -417,6 +417,16 @@ describe('布局引擎', () => {
     );
   });
 
+  it('文首空行＝著者与正文之间空列（每个空行空一列）', () => {
+    const colOf = (src: string) =>
+      layout(parse(src), meta, grid)[0]!.chars.find(
+        (c) => c.ch === '甲' && !c.role,
+      )!.col;
+    expect(colOf('甲')).toBe(2); // 紧接著者列
+    expect(colOf('\n甲')).toBe(3); // 空一列
+    expect(colOf('\n\n甲')).toBe(4); // 空两列
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

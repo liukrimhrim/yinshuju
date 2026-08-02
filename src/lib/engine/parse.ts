@@ -127,7 +127,8 @@ export function parsePara(b: string): Run[] {
 const INDENT_RE = /^\[(\d+(?:\.\d+)?)(?:\s*[,，]\s*(\d+(?:\.\d+)?))?\]\s*/;
 
 export function parse(src: string): Block[] {
-  const trimmed = src.replace(/^\n+|\n+$/g, '');
+  // 保留开头空行：卷端（书名/著者）与正文之间可借此空列
+  const trimmed = src.replace(/\s+$/, '');
   if (!trimmed.trim()) return [];
   const blocks: Block[] = [];
   let paraLines: string[] = [];
@@ -157,8 +158,11 @@ export function parse(src: string): Block[] {
       blankRun++;
       continue;
     }
-    // 连续空行：第一个只作分段（提行），其余每个空一列
-    for (let i = 1; i < blankRun; i++) blocks.push({ type: 'blank' });
+    // 连续空行：段间第一个只作分段（提行），其余每个空一列；
+    // 文首空行无段可分，故每个都空一列
+    const started = blocks.length > 0 || paraLines.length > 0;
+    for (let i = started ? 1 : 0; i < blankRun; i++)
+      blocks.push({ type: 'blank' });
     blankRun = 0;
     if (/^-{3,}$/.test(line.trim())) {
       flush();
