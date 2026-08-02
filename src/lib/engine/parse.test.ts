@@ -121,6 +121,15 @@ describe('markup v1 解析', () => {
     expect(texts.find((r) => r.s === '地')?.size).toBe('large');
   });
 
+  it('连续拉丁/数字合成一段（含内部点与连字符），不逐字拆散', () => {
+    const blocks = parse('见 RAG 与 GPT-4.5 之说');
+    const runs = blocks[0]?.type === 'para' ? blocks[0].runs : [];
+    const latins = runs.filter((r) => r.t === 'latin') as { s: string }[];
+    expect(latins.map((r) => r.s)).toEqual(['RAG', 'GPT-4.5']);
+    const texts = runs.filter((r) => r.t === 'text') as { s: string }[];
+    expect(texts.map((r) => r.s).join('')).toBe('见与之说');
+  });
+
   it('篇题按行判定：#行后无空行的正文不被吞', () => {
     const blocks = parse('# 上篇\n上德不德。\n\n下文');
     expect(blocks).toHaveLength(3);

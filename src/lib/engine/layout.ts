@@ -87,6 +87,26 @@ export function layout(blocks: Block[], meta: Meta, grid: GridParams): Page[] {
         cur.push(o);
         lastBig = o;
         half += hSpan;
+      } else if (r.t === 'latin') {
+        // ≤2 字符：縦中横（直立压入一字位）；更长：转 90° 横排，每字符约半格
+        const upright = r.s.length <= 2;
+        const hSpan = upright ? 2 : Math.max(2, r.s.length);
+        const { scale } = SIZE[r.size ?? 'body'];
+        if (half % 2) half++;
+        if (half + hSpan > HMAX) advanceCol();
+        const o: PlacedChar = {
+          kind: 'latin',
+          ch: r.s,
+          col,
+          half,
+          hSpan,
+          scale,
+          ...(upright ? { upright: true } : {}),
+        };
+        cur.push(o);
+        lastBig = o;
+        half += hSpan;
+        if (half % 2) half++; // 其后正文回字位
       } else if (r.t === 'punct') {
         if (lastBig) lastBig.punct = r.kind;
       } else {

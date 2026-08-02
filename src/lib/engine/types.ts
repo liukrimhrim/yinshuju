@@ -9,6 +9,7 @@ export interface Meta {
 
 export type Run =
   | { t: 'text'; s: string; mark?: SideMark; size?: CharSize }
+  | { t: 'latin'; s: string; size?: CharSize } // 连续拉丁/数字，整段排布
   | { t: 'note'; chars: NoteChar[] } // 双行小字夹注
   | { t: 'punct'; kind: PunctKind }; // 句读，附着于前一大字
 
@@ -31,12 +32,13 @@ export type Block =
 // —— 布局输出：纯网格坐标（几何换算归 svg 层） ——
 
 export interface PlacedChar {
-  kind: 'big' | 'note';
+  kind: 'big' | 'note' | 'latin';
   ch: string;
   col: number; // 页内列序，0 = 最右
   half: number; // 半格游标（起点；一整字占 2 半格）
   hSpan?: number; // 占用半格数：小字 1 / 正文 2 / 大字 4；缺省按 kind 推定
   scale?: number; // 字号倍率（相对正文）；缺省 1
+  upright?: boolean; // latin：縦中横（直立压缩入一字位）；否则转 90° 横排
   sub?: 'R' | 'L'; // 夹注子列，右先
   punct?: PunctKind; // 附着此字的句读
   mark?: SideMark; // 旁线标记（书名线等）

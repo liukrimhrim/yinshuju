@@ -151,6 +151,20 @@ describe('布局引擎', () => {
     expect(dai.half).toBe(0);
   });
 
+  it('拉丁段：短段縦中横占一字位，长段转横排按长度占格', () => {
+    const p = layout(parse('甲AB乙GPT-4.5丙'), meta, grid)[0]!;
+    const all = p.chars.filter((c) => !c.role);
+    const short = all.find((c) => c.kind === 'latin' && c.ch === 'AB')!;
+    expect(short.upright).toBe(true);
+    expect(short.hSpan).toBe(2); // 压进一字位
+    const long = all.find((c) => c.kind === 'latin' && c.ch === 'GPT-4.5')!;
+    expect(long.upright).toBeFalsy();
+    expect(long.hSpan).toBe(7); // 每字符约半格
+    // 其后正文回到字位对齐
+    const bing = all.find((c) => c.ch === '丙')!;
+    expect(bing.half % 2).toBe(0);
+  });
+
   it('每字一格：大字占 2 半格且对齐偶数半格', () => {
     const p = layout(parse('甲乙丙'), meta, grid)[0]!;
     for (const c of bigs(p)) expect(c.half % 2).toBe(0);

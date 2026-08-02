@@ -47,6 +47,9 @@ export function toCnNum(n: number): string {
   );
 }
 
+export // 拉丁/数字用比例衬线字体（中文字体的西文字形多为全宽，疏散且不搭）
+const LATIN_FAMILY = "Georgia,'Times New Roman',serif";
+
 export const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
@@ -432,7 +435,17 @@ function glyphs(
 
   for (const ch of page.chars) {
     const m = metrics(ch);
-    const glyph = `<text x="${m.x}" y="${m.y}" font-size="${m.size.toFixed(1)}" fill="${m.fill}" ${CT}>${esc(ch.ch)}</text>`;
+    let glyph: string;
+    if (ch.kind === 'latin') {
+      const span = (ch.hSpan ?? 2) * (g.cellH / 2);
+      glyph = ch.upright
+        ? // 縦中横：直立压入一字位
+          `<text x="${m.x}" y="${m.y}" font-size="${(m.size * 0.82).toFixed(1)}" fill="${m.fill}" font-family="${LATIN_FAMILY}" textLength="${(g.colW * 0.66).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(ch.ch)}</text>`
+        : // 转 90°：沿列向横排，长度贴合所占格数
+          `<text x="${m.x}" y="${m.y}" font-size="${(m.size * 0.88).toFixed(1)}" fill="${m.fill}" font-family="${LATIN_FAMILY}" textLength="${(span * 0.94).toFixed(1)}" lengthAdjust="spacing" transform="rotate(90 ${m.x.toFixed(1)} ${m.y.toFixed(1)})" ${CT}>${esc(ch.ch)}</text>`;
+    } else {
+      glyph = `<text x="${m.x}" y="${m.y}" font-size="${m.size.toFixed(1)}" fill="${m.fill}" ${CT}>${esc(ch.ch)}</text>`;
+    }
     if (ch.kind === 'note') acc.noteText += glyph;
     else acc.bigText += glyph + sideMark(ch, m);
     if (ch.punct && showPunct) {

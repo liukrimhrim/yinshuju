@@ -232,6 +232,15 @@ describe('SVG 渲染', () => {
     ).toBe(3); // 三道叉线
   });
 
+  it('拉丁段：长段转 90° 且用衬线拉丁字体，短段縦中横压缩', () => {
+    const p = layout(parse('见 GPT-4.5 与 AB 说'), meta, grid)[0]!;
+    const svg = renderPage(p, meta, opts('zhusilan'));
+    expect(svg).toMatch(
+      /<text[^>]*font-family="Georgia,'Times New Roman',serif"[^>]*transform="rotate\(90 [^"]*"[^>]*>GPT-4\.5</,
+    );
+    expect(svg).toMatch(/<text[^>]*lengthAdjust="spacingAndGlyphs"[^>]*>AB</);
+  });
+
   it('toCnNum：一位/十位/两位', () => {
     expect(toCnNum(1)).toBe('一');
     expect(toCnNum(10)).toBe('十');

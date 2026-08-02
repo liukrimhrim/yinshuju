@@ -74,6 +74,17 @@ function parsePara(b: string): Run[] {
       i = j < 0 ? b.length : j + 1;
       continue;
     }
+    // 连续拉丁字母/数字（含内部 . - / : 与单个空格）合成一段，整段排布
+    if (/[A-Za-z0-9]/.test(c)) {
+      const m = /^[A-Za-z0-9]+(?:[.\-/:'’ ]?[A-Za-z0-9]+)*/.exec(b.slice(i))!;
+      runs.push({
+        t: 'latin',
+        s: m[0],
+        ...(curSize ? { size: curSize } : {}),
+      });
+      i += m[0].length;
+      continue;
+    }
     const k = punctKind(c);
     if (k) runs.push({ t: 'punct', kind: k });
     else if (!/\s/.test(c) && !isDropped(c))
