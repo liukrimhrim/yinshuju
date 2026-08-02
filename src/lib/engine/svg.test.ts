@@ -296,6 +296,23 @@ describe('SVG 渲染', () => {
     expect(inBanxin(sOff).length).toBeLessThan(inBanxin(withFolio).length);
   });
 
+  it('版心简名/卷次支持字号标记，星号不入字', () => {
+    const svg = renderPage(
+      page,
+      { ...meta, banxinTitle: '**鬼谷**子' },
+      opts('zhusilan'),
+    );
+    const inBanxin = /<g clip-path="url\(#pc\)">([\s\S]*?)<\/g>/.exec(svg)![1]!;
+    expect(inBanxin).not.toContain('>*<');
+    const fs = (ch: string) =>
+      Number(
+        new RegExp(`<text[^>]*font-size="([\\d.]+)"[^>]*>${ch}<`).exec(
+          inBanxin,
+        )![1],
+      );
+    expect(fs('鬼')).toBeGreaterThan(fs('子'));
+  });
+
   it('toCnNum：一位/十位/两位', () => {
     expect(toCnNum(1)).toBe('一');
     expect(toCnNum(10)).toBe('十');

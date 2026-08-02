@@ -198,32 +198,60 @@ function douStroke(x: number, y: number, len: number, fill: string): string {
   );
 }
 
-// 版心等窄列的竖排文字：拉丁段同样縦中横/转 90°
+// 版心字号标记：*小* / **大**（版心本就小字，故倍率取 0.8 / 1.35）
+const BANXIN_SIZE = { small: 0.8, body: 1, large: 1.35 } as const;
+function splitBanxinSized(text: string) {
+  const out: { s: string; k: keyof typeof BANXIN_SIZE }[] = [];
+  let cur: keyof typeof BANXIN_SIZE = 'body';
+  let buf = '';
+  const flush = () => {
+    if (buf) out.push({ s: buf, k: cur });
+    buf = '';
+  };
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '*') {
+      const double = text[i + 1] === '*';
+      const want = double ? 'large' : 'small';
+      flush();
+      cur = cur === want ? 'body' : (want as keyof typeof BANXIN_SIZE);
+      if (double) i++;
+      continue;
+    }
+    buf += text[i];
+  }
+  flush();
+  return out;
+}
+
+// 版心等窄列的竖排文字：支持字号标记；拉丁段同样縦中横/转 90°
 function vertText(
   text: string,
   x: number,
   yStart: number,
-  size: number,
+  baseSize: number,
   fill: string,
 ): { svg: string; next: number } {
-  const adv = size + 5;
   let out = '';
   let y = yStart;
-  for (const seg of segmentLatin(text)) {
-    if (!seg.latin) {
-      out += `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" ${CT}>${esc(seg.s)}</text>`;
-      y += adv;
-      continue;
-    }
-    const { hSpan, upright } = latinSpan(seg.s.length);
-    const cells = hSpan / 2;
-    if (upright) {
-      out += `<text x="${x}" y="${y}" font-size="${(size * 0.82).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(size * 0.92).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(seg.s)}</text>`;
-      y += adv;
-    } else {
-      const cy = y + ((cells - 1) * adv) / 2;
-      out += `<text x="${x}" y="${cy.toFixed(1)}" font-size="${(size * 0.88).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(cells * adv * 0.9).toFixed(1)}" lengthAdjust="spacing" transform="rotate(90 ${x.toFixed(1)} ${cy.toFixed(1)})" ${CT}>${esc(seg.s)}</text>`;
-      y += cells * adv;
+  for (const chunk of splitBanxinSized(text)) {
+    const size = baseSize * BANXIN_SIZE[chunk.k];
+    const adv = size + 5;
+    for (const seg of segmentLatin(chunk.s)) {
+      if (!seg.latin) {
+        out += `<text x="${x}" y="${y}" font-size="${size.toFixed(1)}" fill="${fill}" ${CT}>${esc(seg.s)}</text>`;
+        y += adv;
+        continue;
+      }
+      const { hSpan, upright } = latinSpan(seg.s.length);
+      const cells = hSpan / 2;
+      if (upright) {
+        out += `<text x="${x}" y="${y}" font-size="${(size * 0.82).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(size * 0.92).toFixed(1)}" lengthAdjust="spacingAndGlyphs" ${CT}>${esc(seg.s)}</text>`;
+        y += adv;
+      } else {
+        const cy = y + ((cells - 1) * adv) / 2;
+        out += `<text x="${x}" y="${cy.toFixed(1)}" font-size="${(size * 0.88).toFixed(1)}" fill="${fill}" font-family="${LATIN_FAMILY}" textLength="${(cells * adv * 0.9).toFixed(1)}" lengthAdjust="spacing" transform="rotate(90 ${x.toFixed(1)} ${cy.toFixed(1)})" ${CT}>${esc(seg.s)}</text>`;
+        y += cells * adv;
+      }
     }
   }
   return { svg: out, next: y };
