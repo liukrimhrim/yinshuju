@@ -241,6 +241,29 @@ describe('SVG 渲染', () => {
     expect(svg).toMatch(/<text[^>]*lengthAdjust="spacingAndGlyphs"[^>]*>AB</);
   });
 
+  it('版心书名/卷次/篇题顺序堆叠，长书名不压卷次', () => {
+    const longMeta = {
+      ...meta,
+      banxinTitle: '鬼谷子疏解',
+      banxinJuan: '卷之二十八',
+    };
+    const svg = renderPage(page, longMeta, {
+      ...opts('zhusilan'),
+      banxinChapter: '捭闔第一',
+    });
+    const inBanxin = /<g clip-path="url\(#pc\)">([\s\S]*?)<\/g>/.exec(svg)![1]!;
+    const ys = [
+      ...inBanxin.matchAll(/<text x="0" y="([\d.]+)"[^>]*>(.)</g),
+    ].map((m) => ({ y: Number(m[1]), ch: m[2]! }));
+    const lastOf = (s: string) =>
+      Math.max(...ys.filter((p) => s.includes(p.ch)).map((p) => p.y));
+    const firstOf = (s: string) =>
+      Math.min(...ys.filter((p) => s.includes(p.ch)).map((p) => p.y));
+    // 卷次首字须在书名末字之下；篇题首字须在卷次末字之下
+    expect(firstOf('卷之二十八')).toBeGreaterThan(lastOf('鬼谷子疏解'));
+    expect(firstOf('捭闔')).toBeGreaterThan(lastOf('卷之二十八'));
+  });
+
   it('toCnNum：一位/十位/两位', () => {
     expect(toCnNum(1)).toBe('一');
     expect(toCnNum(10)).toBe('十');

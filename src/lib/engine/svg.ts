@@ -191,7 +191,7 @@ function vertText(
   yStart: number,
   size: number,
   fill: string,
-): string {
+): { svg: string; next: number } {
   const adv = size + 5;
   let out = '';
   let y = yStart;
@@ -212,7 +212,7 @@ function vertText(
       y += cells * adv;
     }
   }
-  return out;
+  return { svg: out, next: y };
 }
 
 // 版心内容（鱼尾 + 简名卷次 + 页码），中心线在 cx；单叶模式配合 clip 只露右半
@@ -361,28 +361,21 @@ function banxinAt(
   else
     // 单尾本常式：版心约 3/4 处一道横细线（规范票 §2）
     out += `<line x1="${cx - g.colW / 2}" y1="${g.fy0 + 0.75 * g.frameH}" x2="${cx + g.colW / 2}" y2="${g.fy0 + 0.75 * g.frameH}" stroke="${P.frame}" stroke-width="1"/>`;
-  out += vertText(meta.banxinTitle, cx, yF + ftDepth + 14, g.bxFs, P.text);
-  out += vertText(
-    meta.banxinJuan,
-    cx,
-    yF + ftDepth + 14 + 3.2 * (g.bxFs + 5),
-    g.bxFs,
-    P.text,
-  );
-  if (chapter)
-    out += vertText(
-      chapter,
-      cx,
-      yF + ftDepth + 14 + 6.4 * (g.bxFs + 5),
-      g.bxFs,
-      P.text,
-    );
+  // 书名 → 卷次 → 篇题：顺序堆叠（原按固定档位摆放，书名一长即互相压字）
+  const GAP = g.bxFs * 0.55;
+  let cursor = yF + ftDepth + 14;
+  for (const seg of [meta.banxinTitle, meta.banxinJuan, chapter]) {
+    if (!seg) continue;
+    const r = vertText(seg, cx, cursor, g.bxFs, P.text);
+    out += r.svg;
+    cursor = r.next + GAP;
+  }
   // 页码：单尾在 3/4 横线下；双尾在下鱼尾之下
   const folioY =
     ft.count === 2
       ? yLower + ftDepth + 14
       : g.fy0 + 0.75 * g.frameH + g.bxFs * 0.9;
-  out += vertText(toCnNum(folio), cx, folioY, g.bxFs, P.text);
+  out += vertText(toCnNum(folio), cx, folioY, g.bxFs, P.text).svg;
   return out;
 }
 
