@@ -176,7 +176,7 @@ class AppState {
       ...this.renderOpts,
       pageW: this.plan.pageW,
       pageH: this.plan.pageH,
-      overlays: pg.folio === 1 ? this.sealLayer.single : '',
+      overlays: this.curIdx === 0 ? this.sealLayer.single : '',
     };
     return this.plan.mode === 'spread'
       ? renderSpread(
@@ -197,8 +197,7 @@ class AppState {
         ...this.renderOpts,
         pageW: 2 * this.plan.pageW,
         pageH: this.plan.pageH,
-        overlays:
-          this.pages[this.curIdx]!.folio === 1 ? this.sealLayer.spread : '',
+        overlays: this.curIdx === 0 ? this.sealLayer.spread : '',
       },
     ),
   );
@@ -282,12 +281,12 @@ class AppState {
         ).svg
       : '';
     let chapter: string | undefined;
-    return this.layoutWith(grid).map((pg) => {
+    return this.layoutWith(grid).map((pg, i) => {
       for (const c of pg.chapters) chapter = c;
       return renderPage(pg, this.effectiveMeta, {
         ...opts,
         banxinChapter: this.banxinChapter ? chapter : undefined,
-        overlays: pg.folio === 1 ? seal : '',
+        overlays: i === 0 ? seal : '', // 只卷首半叶
       });
     });
   }
