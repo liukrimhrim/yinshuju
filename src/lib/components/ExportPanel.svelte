@@ -1,6 +1,6 @@
 <script lang="ts">
   import { app } from '../state.svelte';
-  import { exportImage, exportPdf } from '../export';
+  import { exportImage, exportImages, exportPdf } from '../export';
   import { RATIO_PRESETS } from '../engine/geometry';
 
   let format = $state<'png' | 'jpeg'>('png');
@@ -52,6 +52,29 @@
       const name = `${app.meta.banxinTitle || '印书局'}-${app.ratioId}.${format === 'png' ? 'png' : 'jpg'}`;
       addLink(name, blob);
       status = `${w}×${h} · ${(blob.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}${sealWarn()}`;
+    });
+
+  const doImages = () =>
+    run(async () => {
+      const t0 = performance.now();
+      const { blobs, w, h, fontEmbedded } = await exportImages(
+        app.exportCtx,
+        app.ratio,
+        { format, quality, scale },
+        (done, total) => {
+          status = `渲染 ${done}/${total} 版…`;
+        },
+      );
+      const ext = format === 'png' ? 'png' : 'jpg';
+      const stem = `${app.meta.banxinTitle || '印书局'}-${app.ratioId}`;
+      let bytes = 0;
+      for (const [i, blob] of blobs.entries()) {
+        // 逐张存盘；浏览器对连发下载会拦，故稍作间隔（首张后浏览器询问一次即可）
+        if (i) await new Promise((r) => setTimeout(r, 250));
+        addLink(`${stem}-${String(i + 1).padStart(2, '0')}.${ext}`, blob);
+        bytes += blob.size;
+      }
+      status = `${blobs.length} 张 · ${w}×${h} · ${(bytes / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}${sealWarn()}`;
     });
 
   async function doPrint() {
@@ -139,6 +162,11 @@
   </section>
 
   <button disabled={busy} onclick={doImage}>导出本版图片</button>
+  {#if frameCount > 1}
+    <button disabled={busy} onclick={doImages}
+      >导出全部图片（{frameCount} 张）</button
+    >
+  {/if}
   <button disabled={busy} onclick={doPdf}
     >导出 PDF（全部 {frameCount} 版）</button
   >

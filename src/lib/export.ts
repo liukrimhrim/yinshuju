@@ -230,30 +230,66 @@ export interface ImageResult {
   fontEmbedded: boolean; // false = 切片缺失，导出退化为查看端字体
 }
 
+export interface ImagesResult {
+  blobs: Blob[]; // 与 frames 同序（对开时一版一张）
+  w: number;
+  h: number;
+  fontEmbedded: boolean;
+}
+
+/** 批量出图：组版与字体切片只做一次，逐版画布 */
+export async function exportImages(
+  ctx: ExportContext,
+  ratio: number,
+  opts: ImageOptions,
+  onProgress?: (done: number, total: number) => void,
+  onlyFrame?: number,
+): Promise<ImagesResult> {
+  const sealFont = ctx.seals.length ? await loadSealFont() : null;
+  const { plan, svgAt, frames } = planFor(ctx, ratio, sealFont);
+  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx), ctx.uploadData);
+  const todo = onlyFrame === undefined ? frames : [onlyFrame];
+  const blobs: Blob[] = [];
+  let w = 0;
+  let h = 0;
+  for (const [i, f] of todo.entries()) {
+    const svg = withFontCSS(svgAt(f), css);
+    const cv = await svgToCanvas(svg, plan.pageW, plan.pageH, opts.scale);
+    blobs.push(
+      await new Promise<Blob>((res, rej) =>
+        cv.toBlob(
+          (b) => (b ? res(b) : rej(new Error('toBlob failed'))),
+          `image/${opts.format}`,
+          opts.quality,
+        ),
+      ),
+    );
+    w = cv.width;
+    h = cv.height;
+    onProgress?.(i + 1, todo.length);
+  }
+  return {
+    blobs,
+    w,
+    h,
+    fontEmbedded: ctx.fontId === 'serif' || css !== '',
+  };
+}
+
 export async function exportImage(
   ctx: ExportContext,
   ratio: number,
   frameIdx: number,
   opts: ImageOptions,
 ): Promise<ImageResult> {
-  const sealFont = ctx.seals.length ? await loadSealFont() : null;
-  const { plan, svgAt } = planFor(ctx, ratio, sealFont);
-  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx), ctx.uploadData);
-  const svg = withFontCSS(svgAt(frameIdx), css);
-  const cv = await svgToCanvas(svg, plan.pageW, plan.pageH, opts.scale);
-  const blob = await new Promise<Blob>((res, rej) =>
-    cv.toBlob(
-      (b) => (b ? res(b) : rej(new Error('toBlob failed'))),
-      `image/${opts.format}`,
-      opts.quality,
-    ),
+  const { blobs, w, h, fontEmbedded } = await exportImages(
+    ctx,
+    ratio,
+    opts,
+    undefined,
+    frameIdx,
   );
-  return {
-    blob,
-    w: cv.width,
-    h: cv.height,
-    fontEmbedded: ctx.fontId === 'serif' || css !== '',
-  };
+  return { blob: blobs[0]!, w, h, fontEmbedded };
 }
 
 // —— PDF：固定 16×28cm 开本多页 + 篇题书签（pdf-lib 低层 outline） ——
