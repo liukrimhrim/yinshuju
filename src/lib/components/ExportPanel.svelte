@@ -2,6 +2,7 @@
   import { app } from '../state.svelte';
   import { exportImage, exportImages, exportPdf } from '../export';
   import { RATIO_PRESETS } from '../engine/geometry';
+  import { zipStore } from '../zip';
 
   let format = $state<'png' | 'jpeg'>('png');
   let quality = $state(0.92);
@@ -67,14 +68,17 @@
       );
       const ext = format === 'png' ? 'png' : 'jpg';
       const stem = `${app.meta.banxinTitle || '印书局'}-${app.ratioId}`;
-      let bytes = 0;
-      for (const [i, blob] of blobs.entries()) {
-        // 逐张存盘；浏览器对连发下载会拦，故稍作间隔（首张后浏览器询问一次即可）
-        if (i) await new Promise((r) => setTimeout(r, 250));
-        addLink(`${stem}-${String(i + 1).padStart(2, '0')}.${ext}`, blob);
-        bytes += blob.size;
-      }
-      status = `${blobs.length} 张 · ${w}×${h} · ${(bytes / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}${sealWarn()}`;
+      status = '打包中…';
+      const zip = zipStore(
+        await Promise.all(
+          blobs.map(async (b, i) => ({
+            name: `${stem}-${String(i + 1).padStart(2, '0')}.${ext}`,
+            data: new Uint8Array(await b.arrayBuffer()),
+          })),
+        ),
+      );
+      addLink(`${stem}.zip`, zip);
+      status = `zip ${blobs.length} 张 · ${w}×${h} · ${(zip.size / 1024 / 1024).toFixed(2)}MB · ${Math.round(performance.now() - t0)}ms${embedWarn(fontEmbedded)}${sealWarn()}`;
     });
 
   async function doPrint() {
@@ -164,7 +168,7 @@
   <button disabled={busy} onclick={doImage}>导出本版图片</button>
   {#if frameCount > 1}
     <button disabled={busy} onclick={doImages}
-      >导出全部图片（{frameCount} 张）</button
+      >导出全部图片 zip（{frameCount} 张）</button
     >
   {/if}
   <button disabled={busy} onclick={doPdf}
