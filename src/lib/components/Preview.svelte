@@ -28,17 +28,17 @@
         disabled={app.curIdx === 0}
         onclick={() => (app.pageIdx = app.curIdx - app.step)}
       >
-        ‹ 前{auto ? '版' : '叶'}
+        ‹ 前{auto ? '叶' : '面'}
       </button>
       <span>
         第 {Math.floor(app.curIdx / app.step) + 1} / {frames}
-        {auto ? '版' : '叶'}
+        {auto ? '叶' : '面'}
       </span>
       <button
         disabled={app.curIdx + app.step >= app.pages.length}
         onclick={() => (app.pageIdx = app.curIdx + app.step)}
       >
-        后{auto ? '版' : '叶'} ›
+        后{auto ? '叶' : '面'} ›
       </button>
     {/if}
     {#if !auto}

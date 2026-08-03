@@ -140,7 +140,7 @@
 
   <button disabled={busy} onclick={doImage}>导出本版图片</button>
   <button disabled={busy} onclick={doPdf}
-    >导出 PDF（全部 {app.pages.length} 叶）</button
+    >导出 PDF（全部 {frameCount} 版）</button
   >
   <button disabled={busy} onclick={doPrint}>打印（Chrome 矢量 PDF 增强）</button
   >

@@ -3,7 +3,7 @@
 
   let { onclose }: { onclose: () => void } = $props();
 
-  // 页序右起：向左翻=下一叶。左缘/←/左滑 → 后叶；右缘/→/右滑 → 前叶
+  // 页序右起：向左翻=下一面。左缘/←/左滑 → 后；右缘/→/右滑 → 前
   function next() {
     if (app.curIdx + app.step < app.pages.length)
       app.pageIdx = app.curIdx + app.step;
@@ -36,14 +36,14 @@
   ontouchend={onTouchEnd}
 >
   <div class="page">{@html app.svg}</div>
-  <button class="zone left" aria-label="后叶" onclick={next}></button>
-  <button class="zone right" aria-label="前叶" onclick={prev}></button>
+  <button class="zone left" aria-label="下一面" onclick={next}></button>
+  <button class="zone right" aria-label="上一面" onclick={prev}></button>
   <button class="close" aria-label="退出阅读" onclick={onclose}>×</button>
   <div class="folio">
     第 {Math.floor(app.curIdx / app.step) + 1} / {Math.ceil(
       app.pages.length / app.step,
     )}
-    {app.plan.mode === 'spread' ? '版' : '叶'}
+    {app.plan.mode === 'spread' ? '叶' : '面'}
   </div>
 </div>
 

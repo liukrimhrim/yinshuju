@@ -171,9 +171,9 @@ export function planFor(
     pageW: plan.pageW,
     pageH: plan.pageH,
   };
-  // 印章只上卷首叶（单叶=folio 1；对开=右半叶 folio 1）
+  // 印章只上卷首半叶（单叶=第一半叶；对开=首版右半叶）
   const overlaysFor = (idx: number): string => {
-    if (!ctx.seals.length || pages[idx]!.folio !== 1) return '';
+    if (!ctx.seals.length || idx !== 0) return '';
     const geo = pageGeo(opts, plan.mode);
     return sealOverlaysFor(
       ctx.seals,

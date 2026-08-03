@@ -95,8 +95,9 @@ describe('布局引擎', () => {
     // 卷首页正文容量 = (10-2)×18 = 144；149 字 → 溢出 5 字到第二页
     const pages = layout(parse('字'.repeat(8 * 18 + 5)), meta, grid);
     expect(pages).toHaveLength(2);
-    expect(pages[0]!.folio).toBe(1);
-    expect(pages[1]!.folio).toBe(2);
+    // 两半叶合印一版：共用叶码，右半叶在前
+    expect(pages[0]).toMatchObject({ folio: 1, side: 'r' });
+    expect(pages[1]).toMatchObject({ folio: 1, side: 'l' });
     expect(bigs(pages[1]!)[0]).toMatchObject({ col: 0, half: 0 });
     expect(bigs(pages[1]!)).toHaveLength(5);
   });
@@ -121,8 +122,9 @@ describe('布局引擎', () => {
     const src = '# 上篇\n\n' + '字'.repeat(8 * 18) + '\n\n# 下篇\n\n后文';
     const pages = layout(parse(src), meta, grid);
     expect(pages[0]!.chapters).toEqual(['上篇']);
-    const p2 = pages.find((p) => p.chapters.includes('下篇'))!;
-    expect(p2.folio).toBeGreaterThan(1);
+    expect(pages.indexOf(pages.find((p) => p.chapters.includes('下篇'))!)).toBe(
+      1,
+    );
     expect(pages.flatMap((p) => p.chapters)).toEqual(['上篇', '下篇']);
   });
 
@@ -228,13 +230,20 @@ describe('布局引擎', () => {
     expect(author[0]!.hSpan).toBe(2);
   });
 
+  it('叶码按版递增：两半叶共用，右半叶在前左半叶在后', () => {
+    const pages = layout(parse('字'.repeat(8 * 18 + 18 * 20 * 2)), meta, grid);
+    expect(pages.length).toBeGreaterThan(3);
+    expect(pages.map((p) => p.folio).slice(0, 4)).toEqual([1, 1, 2, 2]);
+    expect(pages.map((p) => p.side).slice(0, 4)).toEqual(['r', 'l', 'r', 'l']);
+  });
+
   it('--- 行＝分叶符：其后文字另起一叶，连续分叶符不产出空叶', () => {
     const pages = layout(parse('甲\n\n---\n\n乙'), meta, grid);
     expect(pages).toHaveLength(2);
     expect(bigs(pages[0]!).map((c) => c.ch)).toEqual(['甲']);
     expect(bigs(pages[1]!).map((c) => c.ch)).toEqual(['乙']);
-    expect(pages[1]!.folio).toBe(2);
-    expect(bigs(pages[1]!)[0]).toMatchObject({ col: 0, half: 0 }); // 次叶无书名列
+    expect(pages[1]).toMatchObject({ folio: 1, side: 'l' }); // 同版左半叶
+    expect(bigs(pages[1]!)[0]).toMatchObject({ col: 0, half: 0 }); // 次半叶无书名列
 
     // 连续分叶符 / 开头分叶符：不产生空叶
     expect(

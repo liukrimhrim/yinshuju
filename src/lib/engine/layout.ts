@@ -70,7 +70,13 @@ export function layout(
   let lastBig: PlacedChar | null = null;
 
   const flushPage = () => {
-    pages.push({ chars: cur, folio: pages.length + 1, chapters: curChapters });
+    // 一版（叶）两半叶：右半叶先、左半叶后，共用叶码
+    pages.push({
+      chars: cur,
+      folio: Math.floor(pages.length / 2) + 1,
+      side: pages.length % 2 === 0 ? 'r' : 'l',
+      chapters: curChapters,
+    });
     cur = [];
     curChapters = [];
     col = 0;

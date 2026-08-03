@@ -53,7 +53,8 @@ export interface PlacedChar {
 
 export interface Page {
   chars: PlacedChar[];
-  folio: number; // 页码，从 1 起
+  folio: number; // 叶码，从 1 起；一版两半叶共用同一叶码（版心印一次，对折即分左右）
+  side?: 'r' | 'l'; // 半叶在版中的位置：右半叶（先读，版心在其左缘）／左半叶（后读，版心在其右缘）
   chapters: string[]; // 本页起始的篇题（PDF 书签数据源）
 }
 

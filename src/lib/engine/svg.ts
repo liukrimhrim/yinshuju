@@ -115,13 +115,14 @@ function makeGeo(
   o: RenderOptions,
   slots: number,
   mode: 'single' | 'spread',
+  side: 'r' | 'l' = 'r',
 ): Geo {
   const pageH = o.pageH ?? BASE_PAGE_H;
   const pageW = o.pageW ?? Math.round(BASE_PAGE_H * BASE_RATIO);
   const { frameW, frameH, fx0: baseFx0, fy0 } = frameDims(pageW, pageH);
-  // 单半叶：折缝即版心中缝，故版框左缘（=版心中线）贴页面左边，无外白边；
-  // 水平余幅全归订口侧（右）。对开整叶两侧对称。
-  const fx0 = mode === 'single' ? 0 : baseFx0;
+  // 单半叶：折缝即版心中缝，故版框贴页面折缝一侧、无外白边——右半叶折缝在左，
+  // 左半叶折缝在右；水平余幅全归订口侧。对开整叶两侧对称。
+  const fx0 = mode === 'spread' ? baseFx0 : side === 'r' ? 0 : pageW - frameW;
   const pad = padOf(o.frameWidth);
   // 单叶：仅右侧有内线（左缘是折缝）；对开：左右都有
   const usableW = frameW - (mode === 'spread' ? 2 * pad.side : pad.side);
@@ -140,7 +141,11 @@ function makeGeo(
     frameH,
     colW,
     cellH,
-    tx1: fx0 + frameW - pad.side,
+    // 正文区右缘：右半叶止于订口留白；左半叶右侧即中缝，止于半列版心
+    tx1:
+      mode === 'single' && side === 'l'
+        ? fx0 + frameW - colW / 2
+        : fx0 + frameW - pad.side,
     ty0: fy0 + pad.vert,
     fs,
     sx: glyphW / fs, // 横向缩放（1＝方形字）
@@ -575,20 +580,29 @@ export function pageGeo(o: RenderOptions, mode: 'single' | 'spread') {
 
 // —— 单半叶：版心=折缝半列（左缘），左框开口 ——
 export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
-  const g = makeGeo(o, slotsFor(o.grid.cols, 'single'), 'single');
+  const side = page.side ?? 'r';
+  const g = makeGeo(o, slotsFor(o.grid.cols, 'single'), 'single', side);
   const latinFam = o.latinFamily ?? o.fontFamily;
   const P = o.palette;
   const seed = contentHash([page]);
   const defs = buildDefs(g, o, seed);
+  // 折缝＝版心中线（右半叶在左缘、左半叶在右缘），订口在其对侧
+  const fold = side === 'r' ? g.fx0 : g.fx0 + g.frameW;
+  const gutter = side === 'r' ? g.fx0 + g.frameW : g.fx0;
+  const inward = side === 'r' ? -1 : 1;
 
-  let frame = `<path d="M${g.fx0},${g.fy0} H${g.fx0 + g.frameW} V${g.fy0 + g.frameH} H${g.fx0}" fill="none" stroke="${P.frame}" stroke-width="${o.frameWidth}"/>`;
-  const innerX = g.fx0 + g.frameW - 5.5 - o.frameWidth / 2;
+  // 版框三边闭合，折缝一侧开口（折过去便是另半叶）
+  let frame = `<path d="M${fold},${g.fy0} H${gutter} V${g.fy0 + g.frameH} H${fold}" fill="none" stroke="${P.frame}" stroke-width="${o.frameWidth}"/>`;
+  const innerX = gutter + inward * (5.5 + o.frameWidth / 2);
   frame += `<line x1="${innerX}" y1="${g.fy0}" x2="${innerX}" y2="${g.fy0 + g.frameH}" stroke="${P.frame}" stroke-width="1.1"/>`;
-  for (let k = 1; k <= o.grid.cols; k++) {
+  // 界行：订口一侧由双边内线充当，故取靠中缝的 cols 条
+  const k0 = side === 'r' ? 1 : 0;
+  for (let k = k0; k < k0 + o.grid.cols; k++) {
     const x = g.tx1 - k * g.colW;
     frame += `<line x1="${x}" y1="${g.fy0}" x2="${x}" y2="${g.fy0 + g.frameH}" stroke="${P.line}" stroke-width="0.9"/>`;
   }
-  frame += `<g clip-path="url(#pc)">${banxinAt(g.fx0, g, meta, page.folio, P, latinFam, o.banxinChapter, o.fishtail, o)}</g>`;
+  // 版心整幅画在中缝上，由版框裁去另半——右半叶得右半，左半叶得左半
+  frame += `<g clip-path="url(#pc)">${banxinAt(fold, g, meta, page.folio, P, latinFam, o.banxinChapter, o.fishtail, o)}</g>`;
 
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colX = (i: number) => g.tx1 - (i + 1) * g.colW;

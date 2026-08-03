@@ -305,6 +305,37 @@ describe('SVG 渲染', () => {
     expect(inBanxin(sOff).length).toBeLessThan(inBanxin(withFolio).length);
   });
 
+  it('一版两半叶共用版心：叶码相同，右半叶得右半、左半叶得左半', () => {
+    const pages = layout(parse('字'.repeat(8 * 18 * 4)), meta, grid);
+    const o = { ...opts('zhusilan'), pageW: 400, pageH: 700 };
+    const banxinX = (svg: string) =>
+      Number(
+        /<g clip-path="url\(#pc\)">[\s\S]*?<text x="([\d.]+)"/.exec(svg)![1],
+      );
+    const framePath = (svg: string) =>
+      /<path d="(M[^"]+)" fill="none"/.exec(svg)![1]!;
+
+    expect(pages.slice(0, 4).map((p) => p.folio)).toEqual([1, 1, 2, 2]);
+    const r = renderPage(pages[0]!, meta, o);
+    const l = renderPage(pages[1]!, meta, o);
+
+    // 版心画在折缝上：右半叶折缝＝页左缘，左半叶＝页右缘
+    expect(banxinX(r)).toBe(0);
+    expect(banxinX(l)).toBe(400);
+    // 版框在折缝一侧开口
+    expect(framePath(r)).toMatch(/^M0,/);
+    expect(framePath(l)).toMatch(/^M400,/);
+    // 版心内容（含叶码）逐字相同——同一版对折而成
+    const inner = (svg: string) =>
+      /<g clip-path="url\(#pc\)">([\s\S]*?)<\/g>/
+        .exec(svg)![1]!
+        .match(/>([^<]+)</g)!
+        .join('');
+    expect(inner(l)).toBe(inner(r));
+    // 次版叶码递增
+    expect(inner(renderPage(pages[2]!, meta, o))).not.toBe(inner(r));
+  });
+
   it('版心简名/卷次支持字号标记，星号不入字', () => {
     const svg = renderPage(
       page,
