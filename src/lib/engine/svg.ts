@@ -150,7 +150,8 @@ function makeGeo(
     fs,
     sx: glyphW / fs, // 横向缩放（1＝方形字）
     noteFs: fs * 0.5,
-    bxFs: Math.min(17, fs * 0.44),
+    // 版心字：刻本约正文的六成；上限系于版心列宽，免出框
+    bxFs: Math.min(colW * 0.66, fs * 0.6),
   };
 }
 
@@ -424,18 +425,18 @@ function banxinAt(
     out += `<line x1="${cx - g.colW / 2}" y1="${g.fy0 + 0.75 * g.frameH}" x2="${cx + g.colW / 2}" y2="${g.fy0 + 0.75 * g.frameH}" stroke="${P.frame}" stroke-width="1"/>`;
   // 书名 → 卷次 → 篇题：顺序堆叠（原按固定档位摆放，书名一长即互相压字）
   const GAP = g.bxFs * 0.55;
-  let cursor = yF + ftDepth + 14;
+  let cursor = yF + ftDepth + g.bxFs * 0.8;
   for (const seg of [meta.banxinTitle, meta.banxinJuan, chapter]) {
     if (!seg) continue;
     const r = vertText(seg, cx, cursor, g.bxFs, P.text, latinFam);
     out += r.svg;
     cursor = r.next + GAP;
   }
-  // 页码：单尾在 3/4 横线下；双尾在下鱼尾之下
+  // 页码：单尾在 3/4 横线下；双尾在下鱼尾之下——留足空当，不贴鱼尾
   const folioY =
     ft.count === 2
-      ? yLower + ftDepth + 14
-      : g.fy0 + 0.75 * g.frameH + g.bxFs * 0.9;
+      ? yLower + ftDepth + g.bxFs * 1.6
+      : g.fy0 + 0.75 * g.frameH + g.bxFs * 1.4;
   if (folioOpt?.showFolio !== false) {
     const n = folio + ((folioOpt?.folioStart ?? 1) - 1);
     const label = folioOpt?.folioNumeral === 'ar' ? String(n) : toCnNum(n);
