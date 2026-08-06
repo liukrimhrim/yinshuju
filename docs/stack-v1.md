@@ -36,3 +36,14 @@ proto/render-route   原型分支（throwaway，勿合并——含字体二进�
 
 - `svelte-check`（含 tsc）+ `prettier` + `vitest`（引擎层小而准，不测 UI）。
 - 一个 CI workflow：check + build，main 分支追加 deploy。
+
+## 本机字体库（2026-08-02）
+
+内置字体只收**可再分发**的授权（CC0／OFL／政府开放授权／经许可原样分发）。授权只许个人使用、
+不得对外提供字体文件的（如汉仪·新蒂系列），走**本机字体库**：
+
+- 上传的 TTF/OTF 存本机 IndexedDB（`src/lib/fontstore.ts`），可存多款，刷新与重开浏览器都在，
+  在字体下拉里与内置字体并列（前缀「本机：」），可逐项删除。
+- 字体数据**不进仓库、不随站点分发**——只在这台设备的浏览器里；导出时 opentype.js 运行时子集化后
+  内嵌进图片（11.7MB 源字体 → 194KB PNG 实测）。
+- 渲染侧只认一个 family（`User Upload`），切换即换脸，故版式引擎与导出管线无需知道选的是哪一款。

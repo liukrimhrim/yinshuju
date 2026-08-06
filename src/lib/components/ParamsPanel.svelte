@@ -23,15 +23,18 @@
 
   let fontFile: HTMLInputElement;
   async function onFontUpload(e: Event) {
-    const file = (e.currentTarget as HTMLInputElement).files?.[0];
-    if (!file) return;
-    const data = await file.arrayBuffer();
-    const face = new FontFace('User Upload', data);
-    await face.load();
-    document.fonts.add(face);
-    app.uploadFont = { name: file.name, data };
-    app.fontId = 'upload';
-    fontFile.value = '';
+    const input = e.currentTarget as HTMLInputElement;
+    for (const file of input.files ?? []) await app.addUploadFont(file);
+    input.value = '';
+  }
+  // 下拉里内置字体用 FontId，本机字体用 up:<id>——一个选择器管两类
+  const fontSel = $derived(
+    app.fontId === 'upload' ? `up:${app.uploadId}` : app.fontId,
+  );
+  function onFontPick(e: Event) {
+    const v = (e.currentTarget as HTMLSelectElement).value;
+    if (v.startsWith('up:')) void app.useUploadFont(v.slice(3));
+    else app.fontId = v as typeof app.fontId;
   }
 
   const PRESETS = [
@@ -359,15 +362,14 @@
 
   <section>
     <label for="p-font">字体</label>
-    <select id="p-font" bind:value={app.fontId}>
+    <select id="p-font" value={fontSel} onchange={onFontPick}>
       {#each FONTS as f (f.id)}
-        {#if f.id !== 'upload' || app.uploadFont}
-          <option value={f.id}
-            >{f.id === 'upload'
-              ? `上传：${app.uploadFont?.name}`
-              : f.label}</option
-          >
+        {#if f.id !== 'upload'}
+          <option value={f.id}>{f.label}</option>
         {/if}
+      {/each}
+      {#each app.uploadList as f (f.id)}
+        <option value="up:{f.id}">本机：{f.name}</option>
       {/each}
     </select>
     <label for="p-latin">西文字体</label>
@@ -375,16 +377,32 @@
       <option value="cjk">随汉字字体</option>
       <option value="serif">西文衬线（Georgia／Times）</option>
     </select>
-    <button onclick={() => fontFile.click()}>上传字体（TTF/OTF）</button>
+    <button onclick={() => fontFile.click()}>添加本机字体（TTF/OTF）</button>
     <input
       type="file"
       accept=".ttf,.otf,font/ttf,font/otf"
+      multiple
       hidden
       bind:this={fontFile}
       onchange={onFontUpload}
     />
-    {#if app.fontId === 'upload'}
-      <p class="hint">上传字体仅本次会话有效；授权自负。超 8MB 导出不内嵌。</p>
+    {#if app.uploadList.length}
+      <ul class="fontlib">
+        {#each app.uploadList as f (f.id)}
+          <li>
+            <span class:on={app.uploadId === f.id}>{f.name}</span>
+            <button
+              class="del"
+              aria-label="删除 {f.name}"
+              onclick={() => app.removeUploadFont(f.id)}>×</button
+            >
+          </li>
+        {/each}
+      </ul>
+      <p class="hint">
+        本机字体只存在这台设备的浏览器里，不上传、不随站点分发；授权自负。超 8MB
+        导出不内嵌。
+      </p>
     {/if}
   </section>
 
@@ -551,5 +569,26 @@
     margin: 6px 0 0;
     font-size: 11px;
     color: var(--muted);
+  }
+  .fontlib {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    font-size: 12px;
+  }
+  .fontlib li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 0;
+  }
+  .fontlib .on {
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .fontlib .del {
+    padding: 0 8px;
+    line-height: 1.4;
+    font-size: 14px;
   }
 </style>

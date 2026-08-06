@@ -14,6 +14,7 @@ import {
 import type { GridParams, Meta } from './engine/types';
 import { DEMO_META, DEMO_TEXT } from './demo';
 import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
+import { deleteFont, getFont, listFonts, putFont } from './fontstore';
 import { highRiskChars } from './convert';
 import { pageGeo } from './engine/svg';
 import type { Font } from 'opentype.js';
@@ -58,7 +59,10 @@ class AppState {
   pageIdx = $state(0);
   seals = $state<SealSpec[]>([]); // 默认无印——避免首访即拉 21.8MB 篆书字体
   sealFont = $state<Font | null>(null);
-  uploadFont = $state<{ name: string; data: ArrayBuffer } | null>(null); // 会话级，不持久化
+  // 本机字体库：目录常驻（IndexedDB），当前选中的那款才把数据取进内存
+  uploadList = $state<{ id: string; name: string }[]>([]);
+  uploadId = $state<string>(''); // 选中的上传字体；随设置持久化
+  uploadFont = $state<{ name: string; data: ArrayBuffer } | null>(null);
   private sealFontRequested = false;
 
   // 生效正文：开简繁则用转换结果（未就绪时暂用原文）
@@ -235,7 +239,57 @@ class AppState {
     'ratioId',
     'customW',
     'customH',
+    'uploadId',
   ] as const;
+
+  // 上传字体挂到同一个 family，切换即换脸——渲染与导出无需知道是哪一款
+  private async wearFace(data: ArrayBuffer) {
+    for (const f of [...document.fonts])
+      // 换字体前摘掉上一张脸
+      if (f.family === 'User Upload') document.fonts.delete(f);
+    const face = new FontFace('User Upload', data);
+    await face.load();
+    document.fonts.add(face);
+  }
+
+  /** 开机装载字体库目录，并恢复上次选中的那款 */
+  async loadFontLibrary() {
+    this.uploadList = await listFonts();
+    if (!this.uploadList.some((f) => f.id === this.uploadId))
+      this.uploadId = '';
+    if (this.uploadId) await this.useUploadFont(this.uploadId);
+    else if (this.fontId === 'upload') this.fontId = 'zhuque'; // 选中的字体已删
+  }
+
+  async addUploadFont(file: File) {
+    const name = file.name.replace(/\.[^.]+$/, '');
+    const rec = {
+      id: `${Date.now()}-${name}`,
+      name,
+      data: await file.arrayBuffer(),
+    };
+    await putFont(rec);
+    this.uploadList = await listFonts();
+    await this.useUploadFont(rec.id);
+  }
+
+  async useUploadFont(id: string) {
+    const rec = await getFont(id);
+    if (!rec) return;
+    await this.wearFace(rec.data);
+    this.uploadFont = { name: rec.name, data: rec.data };
+    this.uploadId = id;
+    this.fontId = 'upload';
+  }
+
+  async removeUploadFont(id: string) {
+    await deleteFont(id);
+    this.uploadList = await listFonts();
+    if (this.uploadId !== id) return;
+    this.uploadId = '';
+    this.uploadFont = null;
+    this.fontId = 'zhuque';
+  }
 
   constructor() {
     try {

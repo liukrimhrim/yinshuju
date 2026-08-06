@@ -42,6 +42,9 @@
   $effect(() => {
     if (app.convertS2T && !app.s2t) loadS2T().then((c) => (app.s2t = c));
   });
+  $effect(() => {
+    void app.loadFontLibrary(); // 本机字体库：目录常驻，恢复上次选中的那款
+  });
 </script>
 
 {#if app.printSvgs}
