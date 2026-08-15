@@ -199,6 +199,21 @@ describe('布局引擎', () => {
     expect(p1.chars.find((c) => c.ch === 'DeepSeek')!.hSpan).toBe(7);
   });
 
+  it('圈点旁线在书名/著者/篇题列同样生效（与正文一套标记）', () => {
+    const m: Meta = {
+      ...meta,
+      title: '鬼谷子｛疏解｝',
+      author: '止齋＜重輯＞',
+    };
+    const p = layout(parse('# 捭闔｛第一｝\n\n正文'), m, grid)[0]!;
+    const marked = (role: string) =>
+      p.chars.filter((c) => c.role === role && c.mark).map((c) => c.ch);
+    expect(marked('title')).toEqual(['疏', '解']);
+    expect(marked('author')).toEqual(['重', '輯']);
+    expect(marked('chapter')).toEqual(['第', '一']);
+    expect(p.chars.find((c) => c.ch === '鬼')?.mark).toBeUndefined();
+  });
+
   it('著者列按实际占格倒推起点：末尾恒留两字位给印章（含拉丁段）', () => {
     const g = { cols: 10, charsPerCol: 17 };
     const HMAX = g.charsPerCol * 2;

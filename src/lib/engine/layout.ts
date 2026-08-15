@@ -176,6 +176,7 @@ export function layout(
         hSpan,
         scale: eff,
         role,
+        ...(r.t === 'text' && r.mark ? { mark: r.mark } : {}),
         ...(upright ? { upright: true } : {}),
       };
       cur.push(placed);
