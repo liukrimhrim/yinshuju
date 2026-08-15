@@ -136,6 +136,7 @@ export function usedTextOf(ctx: ExportContext): string {
 
 export interface ExportContext {
   text: string;
+  meibiFontId?: FontId; // 眉批字体（与正文不同则一并内嵌）
   meta: Meta;
   grid: GridParams;
   render: Omit<RenderOptions, 'grid' | 'pageW' | 'pageH' | 'overlays'>;
@@ -147,6 +148,15 @@ export interface ExportContext {
   chapterScale: number;
   indent: { top: number; bottom: number; chapter?: number; author?: number };
   sizes: { small: number; large: number };
+}
+
+/** 导出用字体 CSS：正文一套；眉批另用字体且文中确有眉批时再加一套 */
+async function allFontCSS(ctx: ExportContext): Promise<string> {
+  const used = usedTextOf(ctx);
+  const css = await fontCSSFor(ctx.fontId, used, ctx.uploadData);
+  const m = ctx.meibiFontId;
+  if (!m || m === ctx.fontId || !ctx.text.includes('【')) return css;
+  return css + (await fontCSSFor(m, used, ctx.uploadData));
 }
 
 export function planFor(
@@ -247,7 +257,7 @@ export async function exportImages(
 ): Promise<ImagesResult> {
   const sealFont = ctx.seals.length ? await loadSealFont() : null;
   const { plan, svgAt, frames } = planFor(ctx, ratio, sealFont);
-  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx), ctx.uploadData);
+  const css = await allFontCSS(ctx);
   const todo = onlyFrame === undefined ? frames : [onlyFrame];
   const blobs: Blob[] = [];
   let w = 0;
@@ -311,7 +321,7 @@ export async function exportPdf(
     await import('pdf-lib');
   const sealFont = ctx.seals.length ? await loadSealFont() : null;
   const { pages, svgAt, plan } = planFor(ctx, BASE_RATIO, sealFont);
-  const css = await fontCSSFor(ctx.fontId, usedTextOf(ctx), ctx.uploadData);
+  const css = await allFontCSS(ctx);
   const doc = await PDFDocument.create();
   doc.setTitle(ctx.meta.title);
 

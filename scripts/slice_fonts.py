@@ -16,6 +16,9 @@ FONTS = [
     ('zhuque', 'Zhuque Fangsong', ROOT / 'fonts-src' / 'zhuque.ttf'),
     # 全字库正楷（政府开放授权/OFL 双授权，选 OFL：可自由子集）；兜底+印章退楷
     ('twkai', 'TW-Kai', ROOT / 'fonts-src' / 'TW-Kai-98_1.ttf'),
+    # 眉批用行书/草书（Google Fonts OFL；GB 字集，繁体缺字由兜底链接住）
+    ('xingshu', 'Zhi Mang Xing', ROOT / 'fonts-src' / 'xingshu.ttf'),
+    ('caoshu', 'Liu Jian Mao Cao', ROOT / 'fonts-src' / 'caoshu.ttf'),
 ]
 
 

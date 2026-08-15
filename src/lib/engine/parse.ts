@@ -84,6 +84,17 @@ export function parsePara(b: string): Run[] {
       i++;
       continue;
     }
+    // 【…】＝眉批：整段收进天头，不占正文字位（未闭合吃到块尾）
+    if (c === '【') {
+      const j = b.indexOf('】', i + 1);
+      const inner = b.slice(i + 1, j < 0 ? b.length : j);
+      const s = [...inner]
+        .filter((x) => !/\s/.test(x) && !isDropped(x))
+        .join('');
+      if (s) runs.push({ t: 'margin', s });
+      i = j < 0 ? b.length : j + 1;
+      continue;
+    }
     if (c === '（' || c === '(') {
       const close = c === '（' ? '）' : ')';
       const j = b.indexOf(close, i + 1);

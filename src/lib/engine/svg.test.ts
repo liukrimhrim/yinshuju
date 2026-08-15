@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from './parse';
 import { layout } from './layout';
-import { renderPage, renderSpread, toCnNum } from './svg';
+import { pageGeo, renderPage, renderSpread, toCnNum } from './svg';
 import { THEMES } from './themes';
 import type { Meta } from './types';
 
@@ -334,6 +334,43 @@ describe('SVG 渲染', () => {
     expect(inner(l)).toBe(inner(r));
     // 次版叶码递增
     expect(inner(renderPage(pages[2]!, meta, o))).not.toBe(inner(r));
+  });
+
+  it('眉批：写在天头版框之上，用眉批字体，互不相压', () => {
+    const pages = layout(
+      parse(
+        '甲【批語一】乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥【批語二】天',
+      ),
+      meta,
+      grid,
+    );
+    const o = {
+      ...opts('zhusilan'),
+      pageW: 640,
+      pageH: 1120,
+      meibiFamily: "'Zhi Mang Xing'",
+    };
+    const svg = renderPage(pages[0]!, meta, o);
+    const marks = [
+      ...svg.matchAll(
+        /<text x="([\d.]+)" y="([\d.]+)"[^>]*font-family="'Zhi Mang Xing'"[^>]*>(.)</g,
+      ),
+    ].map((m) => ({ x: +m[1]!, y: +m[2]!, ch: m[3]! }));
+    expect(marks.map((m) => m.ch).join('')).toBe('批語一批語二');
+
+    // 全在版框上方（天头）
+    const fy0 = pageGeo(o, 'single').fy0;
+    expect(Math.max(...marks.map((m) => m.y))).toBeLessThan(fy0);
+    // 两条批语不落同一列
+    const colsOf = (a: number, b: number) =>
+      new Set(marks.slice(a, b).map((m) => m.x));
+    const [c1, c2] = [colsOf(0, 3), colsOf(3, 6)];
+    expect([...c1].some((x) => c2.has(x))).toBe(false);
+
+    // 关掉则不印
+    expect(
+      renderPage(pages[0]!, meta, { ...o, showMeibi: false }),
+    ).not.toContain('Zhi Mang Xing');
   });
 
   it('版心简名/卷次支持字号标记，星号不入字', () => {

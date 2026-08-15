@@ -12,7 +12,8 @@ export type Run =
   | { t: 'latin'; s: string; size?: CharSize } // 连续拉丁/数字，整段排布
   | { t: 'note'; chars: NoteChar[] } // 双行小字夹注
   | { t: 'punct'; kind: PunctKind } // 句读，附着于前一大字
-  | { t: 'space'; halves: number }; // 空格：半角半字位、全角一字位
+  | { t: 'space'; halves: number } // 空格：半角半字位、全角一字位
+  | { t: 'margin'; s: string }; // 眉批：写在天头，不占正文字位
 
 // 旁线标记（markup v2，vRain 体系）：书名波浪线/着重圈注/点注/专名直线，画在字右侧
 export type SideMark = 'book' | 'circle' | 'dot' | 'line';
@@ -51,8 +52,16 @@ export interface PlacedChar {
   role?: 'title' | 'author' | 'chapter'; // 特殊列文字；正文无 role
 }
 
+/** 眉批：天头批语，锚在正文某列某格——列定横向位置，格定起讫深浅 */
+export interface MarginNote {
+  col: number;
+  half: number;
+  text: string;
+}
+
 export interface Page {
   chars: PlacedChar[];
+  margins: MarginNote[]; // 本页眉批（天头）
   folio: number; // 叶码，从 1 起；一版两半叶共用同一叶码（版心印一次，对折即分左右）
   side?: 'r' | 'l'; // 半叶在版中的位置：右半叶（先读，版心在其左缘）／左半叶（后读，版心在其右缘）
   chapters: string[]; // 本页起始的篇题（PDF 书签数据源）

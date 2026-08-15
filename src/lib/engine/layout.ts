@@ -3,6 +3,7 @@ import type {
   CharSize,
   Run,
   GridParams,
+  MarginNote,
   Meta,
   Page,
   PlacedChar,
@@ -65,6 +66,7 @@ export function layout(
   const pages: Page[] = [];
   let cur: PlacedChar[] = [];
   let curChapters: string[] = [];
+  let curMargins: MarginNote[] = [];
   let col = 0;
   let half = HMIN;
   let lastBig: PlacedChar | null = null;
@@ -73,11 +75,13 @@ export function layout(
     // 一版（叶）两半叶：右半叶先、左半叶后，共用叶码
     pages.push({
       chars: cur,
+      margins: curMargins,
       folio: Math.floor(pages.length / 2) + 1,
       side: pages.length % 2 === 0 ? 'r' : 'l',
       chapters: curChapters,
     });
     cur = [];
+    curMargins = [];
     curChapters = [];
     col = 0;
     half = hMin;
@@ -131,6 +135,10 @@ export function layout(
       }
       if (r.t === 'punct') {
         if (last) last.punct = r.kind; // 句读附着前字
+        continue;
+      }
+      if (r.t === 'margin') {
+        curMargins.push({ col: atCol, half: h, text: r.s });
         continue;
       }
       if (r.t === 'note') {
@@ -270,6 +278,8 @@ export function layout(
         cur.push(o);
         lastBig = o;
         half += total;
+      } else if (r.t === 'margin') {
+        curMargins.push({ col, half, text: r.s }); // 天头批语，不占字位
       } else if (r.t === 'space') {
         half += r.halves;
         if (half >= hMax) advanceCol();

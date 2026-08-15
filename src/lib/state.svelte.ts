@@ -60,6 +60,9 @@ class AppState {
   seals = $state<SealSpec[]>([]); // 默认无印——避免首访即拉 21.8MB 篆书字体
   sealFont = $state<Font | null>(null);
   // 本机字体库：目录常驻（IndexedDB），当前选中的那款才把数据取进内存
+  meibiFont = $state<'auto' | FontId>('xingshu'); // 眉批字体：auto＝随正文
+  meibiScale = $state(0.5);
+  showMeibi = $state(true);
   uploadList = $state<{ id: string; name: string }[]>([]);
   uploadId = $state<string>(''); // 选中的上传字体；随设置持久化
   uploadFont = $state<{ name: string; data: ArrayBuffer } | null>(null);
@@ -153,6 +156,10 @@ class AppState {
     textureStrength: this.textureStrength,
     fontFamily: fontFamily(this.fontId),
     showPunct: this.showPunct,
+    meibiFamily:
+      this.meibiFont === 'auto' ? undefined : fontFamily(this.meibiFont),
+    meibiScale: this.meibiScale,
+    showMeibi: this.showMeibi,
   });
   private sealLayer = $derived.by(() => {
     if (!this.seals.length)
@@ -240,6 +247,9 @@ class AppState {
     'customW',
     'customH',
     'uploadId',
+    'meibiFont',
+    'meibiScale',
+    'showMeibi',
   ] as const;
 
   // 上传字体挂到同一个 family，切换即换脸——渲染与导出无需知道是哪一款
@@ -257,7 +267,8 @@ class AppState {
     this.uploadList = await listFonts();
     if (!this.uploadList.some((f) => f.id === this.uploadId))
       this.uploadId = '';
-    if (this.uploadId) await this.useUploadFont(this.uploadId);
+    if (this.uploadId)
+      await this.useUploadFont(this.uploadId, this.fontId === 'upload');
     else if (this.fontId === 'upload') this.fontId = 'zhuque'; // 选中的字体已删
   }
 
@@ -273,13 +284,14 @@ class AppState {
     await this.useUploadFont(rec.id);
   }
 
-  async useUploadFont(id: string) {
+  /** 装载本机字体；setBody=false 时只装脸不改正文字体（供眉批单用） */
+  async useUploadFont(id: string, setBody = true) {
     const rec = await getFont(id);
     if (!rec) return;
     await this.wearFace(rec.data);
     this.uploadFont = { name: rec.name, data: rec.data };
     this.uploadId = id;
-    this.fontId = 'upload';
+    if (setBody) this.fontId = 'upload';
   }
 
   async removeUploadFont(id: string) {
@@ -365,6 +377,7 @@ class AppState {
       fontId: this.fontId,
       seals: this.seals,
       uploadData: this.uploadFont?.data ?? null,
+      meibiFontId: this.meibiFont === 'auto' ? this.fontId : this.meibiFont,
     };
   }
 

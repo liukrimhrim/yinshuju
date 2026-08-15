@@ -372,6 +372,40 @@
         <option value="up:{f.id}">本机：{f.name}</option>
       {/each}
     </select>
+    <label for="p-meibi">眉批字体（【…】写在天头）</label>
+    <select id="p-meibi" bind:value={app.meibiFont}>
+      <option value="auto">随正文</option>
+      {#each FONTS as f (f.id)}
+        {#if f.id !== 'upload' || app.uploadList.length}
+          <option value={f.id}
+            >{f.id === 'upload'
+              ? `本机：${app.uploadFont?.name ?? '未选'}`
+              : f.label}</option
+          >
+        {/if}
+      {/each}
+    </select>
+    <p class="hint">
+      行书／草书两款为 GB
+      字集，繁体缺字自动落全字库正楷；要整篇繁体行书，可在本机字体库添加自备字体。
+    </p>
+    <div class="row">
+      <div>
+        <label for="p-meibi-s">眉批字号 {app.meibiScale.toFixed(2)}</label>
+        <input
+          id="p-meibi-s"
+          type="range"
+          min="0.3"
+          max="0.8"
+          step="0.02"
+          bind:value={app.meibiScale}
+        />
+      </div>
+      <div>
+        <label for="p-meibi-on">印眉批</label>
+        <input id="p-meibi-on" type="checkbox" bind:checked={app.showMeibi} />
+      </div>
+    </div>
     <label for="p-latin">西文字体</label>
     <select id="p-latin" bind:value={app.latinFont}>
       <option value="cjk">随汉字字体</option>

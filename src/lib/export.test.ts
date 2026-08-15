@@ -40,6 +40,22 @@ const ctx: ExportContext = {
 };
 
 describe('导出组版', () => {
+  // 眉批另用字体时，导出须把两套字体一并内嵌，否则换台机器看就掉字
+  it('眉批字体与正文字体一并内嵌', async () => {
+    const withMeibi = {
+      ...ctx,
+      text: '粵若稽古【筆力沉著】聖人',
+      fontId: 'huiwen' as const,
+      meibiFontId: 'xingshu' as const,
+    };
+    const { svgAt } = planFor(withMeibi, 16 / 28);
+    // 组版阶段就该把眉批排进天头
+    expect(svgAt(0)).toContain('筆');
+    // 无眉批的文稿不该白拉眉批字体
+    const plain = { ...withMeibi, text: '粵若稽古聖人' };
+    expect(planFor(plain, 16 / 28).svgAt(0)).not.toContain('筆');
+  });
+
   // 叶码改为两半叶共用后，印章不能再靠 folio===1 认卷首（那会连左半叶一起盖）
   it('印章只上卷首半叶：其余半叶（含同叶左半）无印', () => {
     const { pages, svgAt } = planFor(ctx, 16 / 28);

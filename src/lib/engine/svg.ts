@@ -26,6 +26,9 @@ export interface RenderOptions {
   charFillV?: number; // 纵向：字高 / 一字格高（默认 0.80）——控上下字距
   charFillH?: number; // 横向：字宽 / 列宽（默认 0.68）——控字与界行的距离
   latinFamily?: string; // 拉丁/数字字体；缺省＝随汉字字体
+  meibiFamily?: string; // 眉批字体（行书/行草）；缺省＝随正文
+  meibiScale?: number; // 眉批字号（相对正文，默认 0.5）
+  showMeibi?: boolean; // 是否印眉批，缺省印
 }
 
 // 鱼尾（版式规范票 §1/§8）：单/双尾、黑(实心)/白(线描)/花(带饰)、双尾顺(同向)/对(尾尖相向)
@@ -502,10 +505,10 @@ function glyphs(
           d += ` Q${x + (s % 2 ? -2.2 : 2.2)},${y0 + seg * (s + 0.5)} ${x},${y0 + seg * (s + 1)}`;
         return `<path d="${d}" fill="none" stroke="${P.text}" stroke-width="1.2"/>`;
       }
-      case 'circle': // 着重圈注
-        return `<circle cx="${x}" cy="${m.y}" r="${(m.size * 0.11).toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="1.3"/>`;
-      case 'dot': // 着重点注
-        return `<circle cx="${x}" cy="${m.y}" r="${(m.size * 0.07).toFixed(1)}" fill="${P.mark}"/>`;
+      case 'circle': // 密圈：评点本圈关键词句，朱笔一字一圈
+        return `<circle cx="${x}" cy="${m.y}" r="${(m.size * 0.17).toFixed(1)}" fill="none" stroke="${P.mark}" stroke-width="${(m.size * 0.045).toFixed(1)}"/>`;
+      case 'dot': // 密点：同上，实心点
+        return `<circle cx="${x}" cy="${m.y}" r="${(m.size * 0.105).toFixed(1)}" fill="${P.mark}"/>`;
     }
   };
 
@@ -541,6 +544,38 @@ function glyphs(
           : douStroke(m.markX, my, m.markR * 2.6, P.mark); // 读：点长≈句圈直径 1.6 倍
     }
   }
+}
+
+// 眉批：天头批语，自锚定列起向下写、写满转左列；朱笔小字，不侵版框
+function marginNotes(
+  page: Page,
+  colX: (i: number) => number,
+  g: Geo,
+  o: RenderOptions,
+  P: Palette,
+): string {
+  if (o.showMeibi === false || !page.margins.length) return '';
+  const fam = o.meibiFamily ?? o.fontFamily;
+  const fs = g.fs * (o.meibiScale ?? 0.5);
+  const adv = fs * 1.08;
+  const top = Math.max(6, g.fy0 * 0.16) + fs / 2; // 距纸边
+  const rows = Math.max(1, Math.floor((g.fy0 - fs * 0.6 - top) / adv) + 1);
+  let out = '';
+  const used = new Set<number>(); // 已被批语占去的列——后来的往左让，免得相压
+  for (const m of page.margins) {
+    const chars = [...m.text];
+    let start = m.col;
+    while (used.has(start)) start++;
+    for (let i = 0; i < chars.length; i++) {
+      const col = start + Math.floor(i / rows);
+      used.add(col);
+      const x = colX(col) + g.colW / 2;
+      if (x < g.fx0) break; // 写到订口即止，不越版
+      const y = top + (i % rows) * adv;
+      out += `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${fs.toFixed(1)}" fill="${P.mark}" font-family="${fam}" ${CT}>${esc(chars[i]!)}</text>`;
+    }
+  }
+  return out;
 }
 
 function assemble(
@@ -608,6 +643,7 @@ export function renderPage(page: Page, meta: Meta, o: RenderOptions): string {
   const layers: GlyphLayers = { bigText: '', noteText: '', marks: '' };
   const colX = (i: number) => g.tx1 - (i + 1) * g.colW;
   glyphs(page, colX, g, P, o.showPunct, layers, latinFam);
+  layers.marks += marginNotes(page, colX, g, o, P);
   return assemble(g, o, defs, frame, layers);
 }
 
@@ -653,6 +689,10 @@ export function renderSpread(
   const colXR = (i: number) => g.tx1 - (i + 1) * g.colW;
   const colXL = (i: number) => spreadX0 + (cols - 1 - i) * g.colW;
   glyphs(pageR, colXR, g, P, o.showPunct, layers, latinFam);
-  if (pageL) glyphs(pageL, colXL, g, P, o.showPunct, layers, latinFam);
+  layers.marks += marginNotes(pageR, colXR, g, o, P);
+  if (pageL) {
+    glyphs(pageL, colXL, g, P, o.showPunct, layers, latinFam);
+    layers.marks += marginNotes(pageL, colXL, g, o, P);
+  }
   return assemble(g, o, defs, frame, layers);
 }

@@ -143,6 +143,21 @@ describe('markup v1 解析', () => {
     expect(kinds('之\u3000RAG')).toEqual(['text', 'space', 'latin']);
   });
 
+  it('【…】＝眉批：收进 margin run，标点丢弃，未闭合吃到块尾', () => {
+    const runs = (src: string) => {
+      const b = parse(src)[0];
+      return b && b.type === 'para' ? b.runs : [];
+    };
+    const r = runs('粵若稽古【此處立論，極高。】聖人');
+    expect(r.filter((x) => x.t === 'margin')).toEqual([
+      { t: 'margin', s: '此處立論極高' },
+    ]);
+    // 眉批不占正文：正文字数不变
+    expect(r.filter((x) => x.t === 'text')).toHaveLength(6);
+    expect(runs('天【未闭合').at(-1)).toEqual({ t: 'margin', s: '未闭合' });
+    expect(runs('天【】地').filter((x) => x.t === 'margin')).toEqual([]);
+  });
+
   it('篇题按行判定：#行后无空行的正文不被吞', () => {
     const blocks = parse('# 上篇\n上德不德。\n\n下文');
     expect(blocks).toHaveLength(3);

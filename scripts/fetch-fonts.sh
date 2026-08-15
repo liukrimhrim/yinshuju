@@ -30,6 +30,15 @@ if [ ! -f fonts-src/TW-Kai-98_1.ttf ]; then
   rm -f fonts-src/Fonts_Kai.zip
 fi
 
+# 钟齐志莽行书 / 刘建毛草（眉批用，Google Fonts，SIL OFL 1.1；GB 字集，繁体缺字落 TW-Kai）
+for gf in zhimangxing/ZhiMangXing-Regular:xingshu liujianmaocao/LiuJianMaoCao-Regular:caoshu; do
+  src="${gf%%:*}"; dst="${gf##*:}"
+  if [ ! -f "fonts-src/$dst.ttf" ]; then
+    curl -sfL --retry 3 --retry-delay 5 -o "fonts-src/$dst.ttf" \
+      "https://github.com/google/fonts/raw/main/ofl/$src.ttf"
+  fi
+done
+
 # 崇羲篆體（印章用，CC-BY-ND：整包原样分发、禁改作/子集化；署名王心怡、季旭昇）
 if [ ! -f fonts-src/chongxi_seal.otf ]; then
   curl -sfL --retry 3 --retry-delay 5 -o fonts-src/chongxi_seal.zip \
