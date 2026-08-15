@@ -19,7 +19,13 @@ FONTS = [
     # 眉批用行书/草书（Google Fonts OFL；GB 字集，繁体缺字由兜底链接住）
     ('xingshu', 'Zhi Mang Xing', ROOT / 'fonts-src' / 'xingshu.ttf'),
     ('caoshu', 'Liu Jian Mao Cao', ROOT / 'fonts-src' / 'caoshu.ttf'),
+    # 辰宇落雁體：OFL 带保留字体名（辰宇落雁/Chenyuluoyan），切片＝修改版，
+    # 故 family 与内部名一律改作 YSJ Xingkai；出处署名见 README
+    ('xingkai', 'YSJ Xingkai', ROOT / 'fonts-src' / 'xingkai.ttf'),
 ]
+
+# 需改名的字体（OFL 保留字体名条款）：fid -> 新名
+RENAME = {'xingkai': 'YSJ Xingkai'}
 
 
 def to_ranges(cps: list[int]) -> list[list[int]]:
@@ -50,6 +56,17 @@ for fid, family, src in FONTS:
         ss = subset.Subsetter(opt)
         ss.populate(unicodes=chunk)
         ss.subset(font)
+        if fid in RENAME:  # 改内部名，免得修改版仍顶着保留字体名
+            new = RENAME[fid]
+            for rec in font['name'].names:
+                if rec.nameID in (1, 3, 4, 6, 16, 18):
+                    font['name'].setName(
+                        new if rec.nameID != 3 else f'{new};subset',
+                        rec.nameID,
+                        rec.platformID,
+                        rec.platEncID,
+                        rec.langID,
+                    )
         subset.save_font(font, str(out), opt)
         rngs = to_ranges(chunk)
         css_ranges = ','.join(

@@ -11,7 +11,14 @@ export interface Palette {
 }
 
 export type FontId =
-  'zhuque' | 'huiwen' | 'twkai' | 'xingshu' | 'caoshu' | 'upload' | 'serif';
+  | 'zhuque'
+  | 'huiwen'
+  | 'twkai'
+  | 'xingshu'
+  | 'caoshu'
+  | 'xingkai'
+  | 'upload'
+  | 'serif';
 
 export interface Theme {
   id: string;
@@ -97,6 +104,7 @@ export const FONTS: readonly { id: FontId; label: string; family: string }[] = [
   { id: 'twkai', label: '全字库正楷', family: "'TW-Kai'" },
   { id: 'xingshu', label: '志莽行书', family: "'Zhi Mang Xing'" },
   { id: 'caoshu', label: '刘建毛草', family: "'Liu Jian Mao Cao'" },
+  { id: 'xingkai', label: '手写行楷', family: "'YSJ Xingkai'" },
   { id: 'upload', label: '上传字体', family: "'User Upload'" },
   { id: 'serif', label: '系统衬线', family: 'serif' },
 ] as const;

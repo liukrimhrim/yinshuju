@@ -39,6 +39,12 @@ for gf in zhimangxing/ZhiMangXing-Regular:xingshu liujianmaocao/LiuJianMaoCao-Re
   fi
 done
 
+# 辰宇落雁體（眉批行楷，王立宇/劉韋辰，SIL OFL 1.1，保留字体名——切片后须改名）
+if [ ! -f fonts-src/xingkai.ttf ]; then
+  curl -sfL --retry 3 --retry-delay 5 -o fonts-src/xingkai.ttf \
+    "https://github.com/Chenyu-otf/chenyuluoyan_thin/releases/download/v2.0/ChenYuluoyan-2.0-Thin.ttf"
+fi
+
 # 崇羲篆體（印章用，CC-BY-ND：整包原样分发、禁改作/子集化；署名王心怡、季旭昇）
 if [ ! -f fonts-src/chongxi_seal.otf ]; then
   curl -sfL --retry 3 --retry-delay 5 -o fonts-src/chongxi_seal.zip \
