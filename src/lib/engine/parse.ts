@@ -49,7 +49,16 @@ const MARK_OPEN: Record<string, SideMark> = {
   '＜': 'dot',
   '［': 'line',
 };
-const MARK_CLOSE = new Set(['》', '｝', '＞', '］']);
+const MARK_CLOSE = new Set(['》', '｝', '＞', '］', '}', '>', ']']);
+// 半角同样认（｛＜［ 的半角对应）。但半角括号常是原文里的普通符号，
+// 故只在本块内找得到配对闭括号时才当标记——不然照 v1 丢弃，免得
+// 一个孤零零的 < 把后半段全画上点。
+const MARK_OPEN_HALF: Record<string, SideMark> = {
+  '{': 'circle',
+  '<': 'dot',
+  '[': 'line',
+};
+const HALF_CLOSE: Record<string, string> = { '{': '}', '<': '>', '[': ']' };
 
 // 纯文本（去掉行内标记）——供 PDF 书签与版心篇题使用
 const plainOf = (runs: Run[]) =>
@@ -76,6 +85,11 @@ export function parsePara(b: string): Run[] {
     }
     if (MARK_OPEN[c] && !curMark) {
       curMark = MARK_OPEN[c]!;
+      i++;
+      continue;
+    }
+    if (MARK_OPEN_HALF[c] && !curMark && b.includes(HALF_CLOSE[c]!, i + 1)) {
+      curMark = MARK_OPEN_HALF[c]!;
       i++;
       continue;
     }

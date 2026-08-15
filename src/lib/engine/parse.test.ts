@@ -95,6 +95,26 @@ describe('markup v1 解析', () => {
     expect(runs).toHaveLength(4);
   });
 
+  it('旁线标记半角亦认；无配对闭括号的半角括号照旧丢弃', () => {
+    const texts = (src: string) => {
+      const b = parse(src)[0];
+      const runs = b && b.type === 'para' ? b.runs : [];
+      return runs.filter((r) => r.t === 'text') as {
+        s: string;
+        mark?: string;
+      }[];
+    };
+    const t1 = texts('读{慎}之<勿>轻[王詡]也');
+    expect(t1.find((r) => r.s === '慎')?.mark).toBe('circle');
+    expect(t1.find((r) => r.s === '勿')?.mark).toBe('dot');
+    expect(t1.find((r) => r.s === '詡')?.mark).toBe('line');
+    expect(t1.find((r) => r.s === '读')?.mark).toBeUndefined();
+    // 孤立半角括号仍作标点丢弃，不把后文全标上
+    const t2 = texts('甲<乙丙丁');
+    expect(t2.map((r) => r.s).join('')).toBe('甲乙丙丁');
+    expect(t2.every((r) => !r.mark)).toBe(true);
+  });
+
   it('markdown 字号：*小字* 与 **大字**', () => {
     const blocks = parse('正文*小注*正文**标目**尾');
     const runs = blocks[0]?.type === 'para' ? blocks[0].runs : [];
