@@ -70,6 +70,7 @@ async function fontCSSFor(
   fontId: FontId,
   usedText: string,
   uploadData?: ArrayBuffer | null,
+  uploadFamily = 'User Upload',
 ): Promise<string> {
   if (fontId === 'serif') return '';
   if (fontId === 'upload') {
@@ -77,11 +78,11 @@ async function fontCSSFor(
     // 首选运行时子集（几百 KB）；子集失败且 ≤8MB 时整包兜底
     const subB64 = await subsetUploadB64(uploadData, usedText);
     if (subB64)
-      return `@font-face{font-family:'User Upload';src:url(data:font/otf;base64,${subB64});}`;
+      return `@font-face{font-family:'${uploadFamily}';src:url(data:font/otf;base64,${subB64});}`;
     if (uploadData.byteLength > UPLOAD_EMBED_LIMIT) return '';
     const tag = new TextDecoder('latin1').decode(uploadData.slice(0, 4));
     const mime = tag === 'OTTO' ? 'font/otf' : 'font/ttf';
-    return `@font-face{font-family:'User Upload';src:url(data:${mime};base64,${bufToB64(uploadData)});}`;
+    return `@font-face{font-family:'${uploadFamily}';src:url(data:${mime};base64,${bufToB64(uploadData)});}`;
   }
   if (!manifestCache) {
     const res = await fetch('fonts/manifest.json');
@@ -137,6 +138,7 @@ export function usedTextOf(ctx: ExportContext): string {
 export interface ExportContext {
   text: string;
   meibiFontId?: FontId; // 眉批字体（与正文不同则一并内嵌）
+  meibiUploadData?: ArrayBuffer | null; // 眉批用本机字体时的字体数据（独立槽位）
   meta: Meta;
   grid: GridParams;
   render: Omit<RenderOptions, 'grid' | 'pageW' | 'pageH' | 'overlays'>;
@@ -155,7 +157,14 @@ async function allFontCSS(ctx: ExportContext): Promise<string> {
   const used = usedTextOf(ctx);
   const css = await fontCSSFor(ctx.fontId, used, ctx.uploadData);
   const m = ctx.meibiFontId;
-  if (!m || m === ctx.fontId || !ctx.text.includes('【')) return css;
+  if (!m || !ctx.text.includes('【')) return css;
+  // 眉批用本机字体：另一个槽位，即便正文也是本机字体也得各嵌各的
+  if (ctx.meibiUploadData)
+    return (
+      css +
+      (await fontCSSFor('upload', used, ctx.meibiUploadData, 'User Upload 2'))
+    );
+  if (m === ctx.fontId) return css;
   return css + (await fontCSSFor(m, used, ctx.uploadData));
 }
 

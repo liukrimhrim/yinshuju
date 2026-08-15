@@ -15,6 +15,8 @@ import type { GridParams, Meta } from './engine/types';
 import { DEMO_META, DEMO_TEXT } from './demo';
 import { loadSealFont, sealOverlaysFor, type SealSpec } from './seal';
 import { deleteFont, getFont, listFonts, putFont } from './fontstore';
+
+const MEIBI_UPLOAD_FAMILY = "'User Upload 2', 'TW-Kai', serif"; // 眉批本机字体槽
 import { highRiskChars } from './convert';
 import { pageGeo } from './engine/svg';
 import type { Font } from 'opentype.js';
@@ -60,7 +62,9 @@ class AppState {
   seals = $state<SealSpec[]>([]); // 默认无印——避免首访即拉 21.8MB 篆书字体
   sealFont = $state<Font | null>(null);
   // 本机字体库：目录常驻（IndexedDB），当前选中的那款才把数据取进内存
-  meibiFont = $state<'auto' | FontId>('xingshu'); // 眉批字体：auto＝随正文
+  // 眉批字体：auto＝随正文；up:<id>＝某款本机字体（与正文各占一个槽位）
+  meibiFont = $state<'auto' | FontId | `up:${string}`>('xingshu');
+  meibiUploadFont = $state<{ name: string; data: ArrayBuffer } | null>(null);
   meibiScale = $state(0.5);
   showMeibi = $state(true);
   uploadList = $state<{ id: string; name: string }[]>([]);
@@ -157,7 +161,11 @@ class AppState {
     fontFamily: fontFamily(this.fontId),
     showPunct: this.showPunct,
     meibiFamily:
-      this.meibiFont === 'auto' ? undefined : fontFamily(this.meibiFont),
+      this.meibiFont === 'auto'
+        ? undefined
+        : this.meibiFont.startsWith('up:')
+          ? MEIBI_UPLOAD_FAMILY
+          : fontFamily(this.meibiFont as FontId),
     meibiScale: this.meibiScale,
     showMeibi: this.showMeibi,
   });
@@ -253,11 +261,11 @@ class AppState {
   ] as const;
 
   // 上传字体挂到同一个 family，切换即换脸——渲染与导出无需知道是哪一款
-  private async wearFace(data: ArrayBuffer) {
+  private async wearFace(data: ArrayBuffer, family: string) {
     for (const f of [...document.fonts])
-      // 换字体前摘掉上一张脸
-      if (f.family === 'User Upload') document.fonts.delete(f);
-    const face = new FontFace('User Upload', data);
+      // 换字体前摘掉这个槽位上一张脸（正文与眉批各占一个槽，互不相扰）
+      if (f.family === family) document.fonts.delete(f);
+    const face = new FontFace(family, data);
     await face.load();
     document.fonts.add(face);
   }
@@ -269,7 +277,12 @@ class AppState {
       this.uploadId = '';
     if (this.uploadId)
       await this.useUploadFont(this.uploadId, this.fontId === 'upload');
-    else if (this.fontId === 'upload') this.fontId = 'zhuque'; // 选中的字体已删
+    if (this.meibiFont.startsWith('up:')) {
+      const id = this.meibiFont.slice(3);
+      if (this.uploadList.some((f) => f.id === id))
+        await this.useMeibiUploadFont(id);
+      else this.meibiFont = 'xingshu'; // 那款已删
+    } else if (this.fontId === 'upload') this.fontId = 'zhuque'; // 选中的字体已删
   }
 
   async addUploadFont(file: File) {
@@ -288,15 +301,28 @@ class AppState {
   async useUploadFont(id: string, setBody = true) {
     const rec = await getFont(id);
     if (!rec) return;
-    await this.wearFace(rec.data);
+    await this.wearFace(rec.data, 'User Upload');
     this.uploadFont = { name: rec.name, data: rec.data };
     this.uploadId = id;
     if (setBody) this.fontId = 'upload';
   }
 
+  /** 眉批用某款本机字体——独立槽位，不动正文 */
+  async useMeibiUploadFont(id: string) {
+    const rec = await getFont(id);
+    if (!rec) return;
+    await this.wearFace(rec.data, 'User Upload 2');
+    this.meibiUploadFont = { name: rec.name, data: rec.data };
+    this.meibiFont = `up:${id}`;
+  }
+
   async removeUploadFont(id: string) {
     await deleteFont(id);
     this.uploadList = await listFonts();
+    if (this.meibiFont === `up:${id}`) {
+      this.meibiFont = 'xingshu';
+      this.meibiUploadFont = null;
+    }
     if (this.uploadId !== id) return;
     this.uploadId = '';
     this.uploadFont = null;
@@ -377,7 +403,14 @@ class AppState {
       fontId: this.fontId,
       seals: this.seals,
       uploadData: this.uploadFont?.data ?? null,
-      meibiFontId: this.meibiFont === 'auto' ? this.fontId : this.meibiFont,
+      meibiFontId: (this.meibiFont === 'auto'
+        ? this.fontId
+        : this.meibiFont.startsWith('up:')
+          ? 'upload'
+          : this.meibiFont) as FontId,
+      meibiUploadData: this.meibiFont.startsWith('up:')
+        ? (this.meibiUploadFont?.data ?? null)
+        : null,
     };
   }
 

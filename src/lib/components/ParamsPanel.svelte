@@ -31,6 +31,11 @@
   const fontSel = $derived(
     app.fontId === 'upload' ? `up:${app.uploadId}` : app.fontId,
   );
+  function onMeibiPick(e: Event) {
+    const v = (e.currentTarget as HTMLSelectElement).value;
+    if (v.startsWith('up:')) void app.useMeibiUploadFont(v.slice(3));
+    else app.meibiFont = v as typeof app.meibiFont;
+  }
   function onFontPick(e: Event) {
     const v = (e.currentTarget as HTMLSelectElement).value;
     if (v.startsWith('up:')) void app.useUploadFont(v.slice(3));
@@ -373,16 +378,15 @@
       {/each}
     </select>
     <label for="p-meibi">眉批字体（【…】写在天头）</label>
-    <select id="p-meibi" bind:value={app.meibiFont}>
+    <select id="p-meibi" value={app.meibiFont} onchange={onMeibiPick}>
       <option value="auto">随正文</option>
       {#each FONTS as f (f.id)}
-        {#if f.id !== 'upload' || app.uploadList.length}
-          <option value={f.id}
-            >{f.id === 'upload'
-              ? `本机：${app.uploadFont?.name ?? '未选'}`
-              : f.label}</option
-          >
+        {#if f.id !== 'upload'}
+          <option value={f.id}>{f.label}</option>
         {/if}
+      {/each}
+      {#each app.uploadList as f (f.id)}
+        <option value="up:{f.id}">本机：{f.name}</option>
       {/each}
     </select>
     <p class="hint">
