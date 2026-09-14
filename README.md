@@ -99,6 +99,22 @@ npm run dev
 
 推 main 即由 GitHub Actions 跑检查并部署到 Pages。
 
+### 口令门（可选）
+
+仓库设了 `SITE_PASSWORD` 这个 Actions secret，部署时就会给站点加锁：
+
+```bash
+gh secret set SITE_PASSWORD --repo <owner>/<repo>
+```
+
+加锁做的事是把**入口 JS/CSS 整体 AES-GCM 加密**（PBKDF2-SHA256，31 万次迭代）写成 `app.enc`，
+并**删掉明文入口**，首页换成一张口令页。没有口令拿到的只是密文，界面都拼不出来。
+口令可勾选「在这台设备上记住」（存本机 localStorage），此后直接进；网址后加 `#lock` 即遗忘重锁。
+
+边界说明：这是静态托管能做到的上限。**不是**服务端鉴权——口令人人可转发、可离线暴力破解（请用长口令），
+也**没有 IP 白名单**（静态站看不到访客 IP）。另外仓库公开的话源码照样可读，这道门挡的是「知道网址就能用」。
+不设这个 secret 则一切照旧、站点公开。
+
 **技术栈**：Svelte 5 + Vite + TypeScript。版面由自研布局引擎算成逐字坐标表，再渲染成 SVG——屏幕、图片、PDF 三个出口共用同一张坐标表，所见即所得。引擎（`src/lib/engine/`）是纯函数，不依赖框架。
 
 ## 文档

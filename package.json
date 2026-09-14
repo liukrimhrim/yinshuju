@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
-    "fonts": "sh scripts/build-fonts.sh"
+    "fonts": "sh scripts/build-fonts.sh",
+    "lock": "node scripts/lock-dist.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",

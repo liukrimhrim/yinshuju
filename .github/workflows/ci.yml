@@ -42,6 +42,9 @@ jobs:
       - run: npm run fonts
       - run: npm run build
         env: { CI: 'true' }
+      # 口令门：设了 SITE_PASSWORD 才加锁；没设则照旧公开发布
+      - run: npm run lock
+        env: { SITE_PASSWORD: '${{ secrets.SITE_PASSWORD }}' }
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
       - id: deployment
